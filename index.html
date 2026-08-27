@@ -3,644 +3,768 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0a0c10">
+  <meta name="theme-color" content="#f2efe6">
   <title>Raspberry Pi 電子工作シミュレータ</title>
   <style>
     :root {
-      --bg: #090b0f;
-      --panel: #11141a;
-      --panel-2: #171b22;
-      --line: #292f39;
-      --text: #f5f7fb;
-      --muted: #929baa;
-      --accent: #7ee787;
-      --accent-2: #5eead4;
-      --warn: #ffca6a;
-      --danger: #ff7b72;
-      --radius: 18px;
-      --shadow: 0 18px 50px #0007;
+      --paper:#f2efe6; --surface:#fffdf7; --ink:#171816; --muted:#686961; --line:#c9c6bb;
+      --green:#176b50; --green-soft:#dcecdf; --yellow:#f5c84c; --red:#d94c3f;
+      --blue:#2878b5; --shadow:4px 4px 0 #171816; --radius:10px;
     }
-
-    * { box-sizing: border-box; }
-    html { color-scheme: dark; scroll-behavior: smooth; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
     body {
-      margin: 0;
-      min-width: 320px;
-      background:
-        radial-gradient(circle at 12% 0%, #17362a66 0, transparent 32rem),
-        radial-gradient(circle at 90% 15%, #17344a55 0, transparent 28rem),
-        var(--bg);
-      color: var(--text);
-      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      line-height: 1.55;
+      margin:0; min-width:320px; background:var(--paper); color:var(--ink);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif; line-height:1.55;
     }
-    button { font: inherit; }
-    button:focus-visible, summary:focus-visible { outline: 3px solid #9aefd2; outline-offset: 3px; }
+    button,input { font:inherit; }
+    button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible { outline:3px solid var(--blue); outline-offset:3px; }
+    button:disabled { cursor:not-allowed; opacity:.38; }
+    a { color:inherit; }
 
-    .app-header {
-      position: sticky;
-      top: 0;
-      z-index: 20;
-      padding: max(12px, env(safe-area-inset-top)) max(16px, calc((100vw - 1240px) / 2)) 12px;
-      border-bottom: 1px solid #ffffff12;
-      background: #090b0fdd;
-      backdrop-filter: blur(18px);
+    .app-header { position:sticky; top:0; z-index:20; border-bottom:1px solid var(--ink); background:#fffdf7f2; backdrop-filter:blur(12px); }
+    .header-inner {
+      display:flex; align-items:center; justify-content:space-between; width:min(1420px,100%); min-height:58px;
+      margin:0 auto; padding:max(8px,env(safe-area-inset-top)) 18px 8px; gap:18px;
     }
-    .header-inner { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
-    .brand { display: flex; align-items: center; min-width: 0; gap: 11px; }
-    .brand-mark {
-      display: grid;
-      place-items: center;
-      width: 38px;
-      height: 38px;
-      flex: 0 0 auto;
-      border: 1px solid #7ee78755;
-      border-radius: 12px;
-      background: linear-gradient(145deg, #20482f, #14221a);
-      box-shadow: inset 0 1px #ffffff20;
-      color: var(--accent);
-      font-weight: 900;
-    }
-    .brand-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; font-weight: 800; letter-spacing: -.01em; }
-    .version { margin-left: 7px; color: var(--muted); font-size: 10px; font-weight: 650; }
-    .header-progress { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; }
-    .progress-track { width: 112px; height: 7px; overflow: hidden; border-radius: 99px; background: #262b33; }
-    .progress-fill { width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--accent), var(--accent-2)); transition: width .35s ease; }
-    .progress-label { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }
+    .brand { display:flex; align-items:center; min-width:0; gap:10px; }
+    .brand-mark { position:relative; width:30px; height:30px; flex:0 0 auto; border:1px solid var(--ink); border-radius:50%; background:var(--green); }
+    .brand-mark::before,.brand-mark::after { content:""; position:absolute; background:var(--surface); }
+    .brand-mark::before { top:7px; bottom:7px; left:14px; width:1px; }
+    .brand-mark::after { top:14px; right:7px; left:7px; height:1px; }
+    .brand-title { overflow:hidden; font-size:14px; font-weight:800; text-overflow:ellipsis; white-space:nowrap; }
+    .version { margin-left:6px; color:var(--muted); font:600 10px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .header-progress { display:flex; align-items:center; flex:0 0 auto; gap:9px; }
+    .progress-track { width:108px; height:7px; overflow:hidden; border:1px solid var(--ink); background:var(--surface); }
+    .progress-fill { width:0; height:100%; background:var(--green); transition:width .25s ease; }
+    .progress-label { color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums; }
 
-    .shell { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 20px; width: min(1240px, 100%); margin: 0 auto; padding: 20px 16px 72px; }
-    .course-panel { position: sticky; top: 83px; align-self: start; max-height: calc(100vh - 103px); overflow: auto; padding: 14px; border: 1px solid var(--line); border-radius: var(--radius); background: #101319d9; box-shadow: var(--shadow); }
-    .eyebrow { margin: 0 0 5px; color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-    .course-panel h2 { margin: 0; font-size: 17px; }
-    .course-copy { margin: 7px 0 14px; color: var(--muted); font-size: 12px; }
-    .lesson-list { display: grid; gap: 7px; }
+    .app-shell { display:grid; grid-template-columns:256px minmax(0,1fr); width:min(1420px,100%); min-height:calc(100vh - 59px); margin:0 auto; }
+    .course { position:sticky; top:59px; align-self:start; height:calc(100vh - 59px); overflow:auto; border-right:1px solid var(--ink); padding:24px 16px 40px; }
+    .overline { margin:0 0 4px; color:var(--green); font:800 10px ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.1em; text-transform:uppercase; }
+    .course h2 { margin:0; font-size:18px; line-height:1.25; letter-spacing:-.02em; }
+    .course-copy { margin:7px 0 18px; color:var(--muted); font-size:11px; }
+    .lesson-list { display:grid; gap:4px; }
     .lesson-button {
-      display: grid;
-      grid-template-columns: 30px 1fr auto;
-      align-items: center;
-      width: 100%;
-      gap: 9px;
-      padding: 10px;
-      border: 1px solid transparent;
-      border-radius: 13px;
-      background: transparent;
-      color: var(--text);
-      text-align: left;
-      cursor: pointer;
+      display:grid; grid-template-columns:28px minmax(0,1fr) auto; align-items:center; width:100%; min-height:48px;
+      gap:9px; padding:7px 8px; border:1px solid transparent; border-radius:7px; background:transparent; color:var(--ink); text-align:left; cursor:pointer;
     }
-    .lesson-button:hover { background: #ffffff08; }
-    .lesson-button.active { border-color: #7ee78745; background: #7ee7870d; }
-    .lesson-number { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 9px; background: #232830; color: #c8ced8; font-size: 12px; font-weight: 800; }
-    .lesson-button.active .lesson-number { background: var(--accent); color: #08120b; }
-    .lesson-button.done .lesson-number { background: #254833; color: var(--accent); }
-    .lesson-name { display: block; font-size: 12px; font-weight: 750; line-height: 1.3; }
-    .lesson-kind { display: block; margin-top: 2px; color: var(--muted); font-size: 10px; }
-    .done-mark { color: var(--accent); font-size: 13px; font-weight: 900; }
-    .safety-mini { margin-top: 13px; padding: 11px; border: 1px solid #ffca6a33; border-radius: 12px; background: #ffca6a0c; color: #e9d4aa; font-size: 11px; }
-
-    main { min-width: 0; }
-    .lesson-hero { padding: 10px 4px 18px; }
-    .lesson-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; }
-    .chip { padding: 4px 8px; border: 1px solid #ffffff18; border-radius: 99px; background: #ffffff08; color: #cbd2dc; font-size: 10px; font-weight: 750; }
-    .lesson-hero h1 { max-width: 780px; margin: 10px 0 6px; font-size: clamp(27px, 4.5vw, 47px); line-height: 1.08; letter-spacing: -.045em; }
-    .lesson-subtitle { max-width: 720px; margin: 0; color: #b6beca; font-size: 14px; }
-    .goal { display: flex; gap: 9px; max-width: 760px; margin-top: 13px; padding: 11px 13px; border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; background: #7ee7870a; font-size: 12px; }
-    .goal strong { color: var(--accent); white-space: nowrap; }
-
-    .grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(260px, .75fr); gap: 14px; }
-    .card { overflow: hidden; border: 1px solid var(--line); border-radius: var(--radius); background: linear-gradient(180deg, #151920, #101319); box-shadow: 0 15px 35px #0003; }
-    .card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid var(--line); }
-    .card-title { margin: 0; font-size: 13px; font-weight: 800; }
-    .card-kicker { color: var(--muted); font-size: 10px; }
-    .card-body { padding: 16px; }
-    .circuit-stage { position: relative; min-height: 310px; border-bottom: 1px solid var(--line); background-color: #0b0e13; background-image: radial-gradient(#ffffff16 1px, transparent 1px); background-size: 18px 18px; }
-    .circuit-stage svg { display: block; width: 100%; height: auto; min-height: 310px; }
-    .stage-badge { position: absolute; top: 12px; left: 12px; padding: 5px 8px; border: 1px solid #ffffff16; border-radius: 8px; background: #090b0fbb; color: #a9b1bd; font-size: 10px; backdrop-filter: blur(8px); }
-    .wiring-panel { padding: 16px; }
-    .step-count { margin-bottom: 5px; color: var(--accent); font-size: 10px; font-weight: 800; letter-spacing: .08em; }
-    .wiring-question { margin: 0 0 12px; font-size: 15px; font-weight: 750; }
-    .choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-    .choice, .action, .ghost {
-      min-height: 42px;
-      border-radius: 11px;
-      font-weight: 750;
-      cursor: pointer;
+    .lesson-button:hover { border-color:var(--line); background:#ffffff66; }
+    .lesson-button.active { border-color:var(--ink); background:var(--ink); color:var(--surface); }
+    .lesson-number {
+      display:grid; place-items:center; width:27px; height:27px; border:1px solid currentColor; border-radius:50%;
+      font:800 10px ui-monospace,SFMono-Regular,Menlo,monospace;
     }
-    .choice { padding: 9px 10px; border: 1px solid #373e49; background: #1d222a; color: var(--text); font-size: 12px; }
-    .choice:hover { border-color: #667180; background: #242a33; }
-    .feedback { min-height: 24px; margin-top: 10px; color: var(--muted); font-size: 12px; }
-    .feedback.good { color: var(--accent); }
-    .feedback.bad { color: var(--danger); }
-    .wire-actions { display: flex; gap: 8px; margin-top: 5px; }
-    .ghost { padding: 8px 12px; border: 1px solid #343b46; background: transparent; color: #c1c8d2; font-size: 11px; }
+    .lesson-button.done:not(.active) .lesson-number { border-color:var(--green); background:var(--green); color:white; }
+    .lesson-name { display:block; font-size:11px; font-weight:750; line-height:1.25; }
+    .lesson-kind { display:block; margin-top:2px; opacity:.62; font-size:9px; }
+    .done-word { font-size:9px; font-weight:700; }
+    .safety-rule { margin-top:18px; padding:10px 0; border-block:1px solid var(--ink); color:var(--muted); font-size:10px; }
+    .safety-rule strong { color:var(--red); }
 
-    .side-stack { display: grid; align-content: start; gap: 14px; }
-    .parts { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
-    .part { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 10px; border-radius: 10px; background: #ffffff07; color: #d9dee6; font-size: 12px; }
-    .part::before { content: ""; width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: var(--accent-2); box-shadow: 0 0 10px #5eead477; }
-    .concept { margin: 0; color: #bbc3cf; font-size: 12px; }
-    .concept strong { color: var(--text); }
-    .danger-note { padding: 12px; border: 1px solid #ffca6a33; border-radius: 12px; background: #ffca6a0b; color: #e9d4aa; font-size: 11px; }
+    main { min-width:0; padding:30px clamp(18px,4vw,58px) 64px; }
+    .lesson-header { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:end; gap:20px; margin-bottom:22px; }
+    .lesson-labels { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:9px; }
+    .label { padding:3px 7px; border:1px solid var(--ink); border-radius:99px; background:var(--surface); font:700 9px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .lesson-header h1 { max-width:760px; margin:0; font-size:clamp(30px,5vw,58px); line-height:1.02; letter-spacing:-.055em; }
+    .lesson-subtitle { max-width:720px; margin:9px 0 0; color:var(--muted); font-size:13px; }
+    .goal-note { width:min(275px,30vw); padding:12px 14px; border-left:3px solid var(--green); background:var(--green-soft); font-size:11px; }
+    .goal-note strong { display:block; margin-bottom:3px; color:var(--green); font-size:9px; letter-spacing:.08em; }
 
-    .section { margin-top: 14px; }
-    .sim-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, .75fr); gap: 14px; }
-    .simulator { position: relative; min-height: 220px; display: grid; place-items: center; padding: 22px; text-align: center; }
-    .sim-lock { position: absolute; inset: 0; z-index: 3; display: grid; place-items: center; padding: 30px; background: #0d1015e8; color: #aab2bf; font-size: 12px; backdrop-filter: blur(5px); }
-    .sim-device { display: grid; justify-items: center; gap: 14px; }
-    .lamp { width: 58px; height: 58px; border: 6px solid #343a43; border-radius: 50%; background: #3a3d42; transition: .2s; }
-    .lamp.on { border-color: #d1ab31; background: #ffe46b; box-shadow: 0 0 18px #ffe46b, 0 0 55px #ffe46b88; }
-    .lamp.red.on { border-color: #8e2b27; background: #ff6159; box-shadow: 0 0 30px #ff615999; }
-    .lamp.amber.on { border-color: #96651d; background: #ffbf47; box-shadow: 0 0 30px #ffbf4799; }
-    .lamp.green.on { border-color: #246c40; background: #57d782; box-shadow: 0 0 30px #57d78299; }
-    .traffic { display: flex; gap: 13px; padding: 13px; border: 1px solid #373d46; border-radius: 18px; background: #0b0d10; }
-    .traffic .lamp { width: 44px; height: 44px; border-width: 4px; }
-    .action { padding: 10px 15px; border: 0; background: var(--accent); color: #07110a; font-size: 12px; }
-    .action:hover { filter: brightness(1.08); }
-    .action.secondary { border: 1px solid #3a424e; background: #242a33; color: var(--text); }
-    .sim-readout { color: var(--accent-2); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
-    input[type="range"] { width: min(300px, 76vw); accent-color: var(--accent); }
-    .quiz { padding: 16px; }
-    .quiz h3 { margin: 0 0 5px; font-size: 15px; }
-    .quiz p { margin: 0 0 11px; color: #b7bfca; font-size: 12px; }
-    .quiz-options { display: grid; gap: 7px; }
-    .quiz-option { padding: 10px; border: 1px solid #343b46; border-radius: 10px; background: #191d24; color: var(--text); text-align: left; font-size: 11px; cursor: pointer; }
-    .quiz-option:hover { border-color: #6e7886; }
-    .quiz-result { min-height: 20px; margin-top: 9px; color: var(--muted); font-size: 11px; }
-    .quiz-result.good { color: var(--accent); }
-    .quiz-result.bad { color: var(--danger); }
+    .process-nav { display:grid; grid-template-columns:repeat(3,1fr); margin-bottom:14px; border:1px solid var(--ink); background:var(--surface); }
+    .process-tab { min-height:48px; border:0; border-right:1px solid var(--ink); background:transparent; color:var(--ink); font-size:11px; font-weight:800; cursor:pointer; }
+    .process-tab:last-child { border-right:0; }
+    .process-tab.active { background:var(--ink); color:var(--surface); }
+    .tab-index { margin-right:6px; opacity:.55; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .tab-check { margin-left:5px; color:#7ee4a8; }
+    .stage { display:none; }
+    .stage.active { display:block; }
+    .workbench { border:1px solid var(--ink); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); }
+    .bench-head { display:flex; align-items:center; justify-content:space-between; min-height:45px; gap:12px; padding:9px 14px; border-bottom:1px solid var(--ink); }
+    .bench-title { margin:0; font-size:12px; font-weight:800; }
+    .bench-note { color:var(--muted); font-size:9px; }
+    .count { flex:0 0 auto; padding:3px 7px; border:1px solid var(--ink); border-radius:99px; font:750 9px ui-monospace,SFMono-Regular,Menlo,monospace; }
 
-    details { border-top: 1px solid var(--line); }
-    summary { display: flex; align-items: center; justify-content: space-between; padding: 15px 16px; cursor: pointer; font-size: 13px; font-weight: 800; list-style: none; }
-    summary::-webkit-details-marker { display: none; }
-    summary::after { content: "+"; color: var(--muted); font-size: 18px; font-weight: 400; }
-    details[open] summary::after { content: "−"; }
-    .detail-body { padding: 0 16px 16px; }
-    .code-wrap { position: relative; }
-    pre { max-height: 330px; margin: 0; overflow: auto; padding: 16px; border: 1px solid #262c34; border-radius: 12px; background: #080a0d; color: #dce3ec; font: 11px/1.65 ui-monospace, SFMono-Regular, Menlo, Monaco, monospace; tab-size: 2; }
-    .copy { position: absolute; top: 8px; right: 8px; padding: 6px 9px; border: 1px solid #404854; border-radius: 8px; background: #1c2128; color: #d4dae3; font-size: 10px; cursor: pointer; }
-    .explain-list, .real-list { margin: 11px 0 0; padding-left: 18px; color: #b8c0cb; font-size: 11px; }
-    .explain-list li, .real-list li { margin: 6px 0; }
-    .command { display: block; margin: 8px 0; padding: 10px 12px; overflow-x: auto; border-radius: 9px; background: #090b0e; color: #a9efd2; font: 11px ui-monospace, monospace; }
-    .lesson-nav { display: flex; justify-content: space-between; gap: 10px; margin-top: 18px; }
-    .lesson-nav button { flex: 1; max-width: 240px; }
-    .footer-note { margin: 20px 0 0; color: #737d8b; text-align: center; font-size: 10px; }
-
-    @media (max-width: 880px) {
-      .shell { grid-template-columns: 1fr; padding-top: 14px; }
-      .course-panel { position: static; max-height: none; overflow: visible; }
-      .course-copy, .safety-mini { display: none; }
-      .lesson-list { grid-template-columns: repeat(7, minmax(44px, 1fr)); overflow-x: auto; }
-      .lesson-button { display: grid; grid-template-columns: 1fr; min-width: 48px; padding: 7px 4px; text-align: center; }
-      .lesson-number { margin: auto; }
-      .lesson-name, .lesson-kind, .done-mark { display: none; }
-      .grid, .sim-layout { grid-template-columns: 1fr; }
-      .side-stack { grid-template-columns: 1fr 1fr; }
+    .wire-layout { display:grid; grid-template-columns:minmax(350px,.95fr) minmax(320px,1.05fr); }
+    .pinout-wrap { min-width:0; padding:18px; border-right:1px solid var(--ink); background:#e9e6dc; }
+    .pinout-caption { display:flex; align-items:center; justify-content:space-between; margin-bottom:9px; gap:8px; }
+    .pinout-caption strong { font-size:11px; }
+    .pinout-caption span { color:var(--muted); font-size:9px; }
+    .board { position:relative; min-height:348px; overflow:hidden; border:1px solid #0c3127; border-radius:18px; background:#1c604c; box-shadow:inset 0 0 0 5px #ffffff0c; }
+    .board::before,.board::after { content:""; position:absolute; width:50px; height:24px; border:1px solid #ffffff45; border-radius:4px; background:#133b31; }
+    .board::before { top:22px; left:18px; }
+    .board::after { right:18px; bottom:22px; }
+    .board-name { position:absolute; top:29px; right:18px; color:white; font-size:13px; font-weight:800; }
+    .board-note { position:absolute; bottom:25px; left:18px; color:#c7ded5; font:8px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .pin-header {
+      position:absolute; top:56px; bottom:52px; left:50%; display:grid; grid-template-columns:repeat(2,minmax(108px,1fr));
+      grid-template-rows:repeat(20,1fr); width:min(88%,286px); transform:translateX(-50%); border:4px solid #15352c; background:#132b25;
     }
-    @media (max-width: 560px) {
-      .app-header { padding-inline: 13px; }
-      .brand-title { max-width: 58vw; }
-      .progress-track { width: 58px; }
-      .progress-label { display: none; }
-      .shell { padding-inline: 11px; }
-      .course-panel { padding: 10px; border-radius: 15px; }
-      .lesson-hero { padding-inline: 2px; }
-      .lesson-hero h1 { font-size: 31px; }
-      .goal { display: block; }
-      .goal strong { display: block; margin-bottom: 2px; }
-      .choices { grid-template-columns: 1fr; }
-      .circuit-stage { min-height: 250px; }
-      .circuit-stage svg { min-height: 250px; }
-      .side-stack { grid-template-columns: 1fr; }
-      .card-body, .wiring-panel, .quiz { padding: 14px; }
-      .simulator { min-height: 190px; }
+    .pin { position:relative; display:flex; align-items:center; min-width:0; padding:0 6px; gap:5px; color:#d5e3de; font:7px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .pin.odd { justify-content:flex-end; border-right:1px solid #ffffff18; text-align:right; }
+    .pin.even { flex-direction:row-reverse; justify-content:flex-end; }
+    .pin-dot { width:8px; height:8px; flex:0 0 auto; border:1px solid #081b16; border-radius:50%; background:#c5a94e; box-shadow:inset 0 0 0 2px #f0d76d; }
+    .pin-label { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .pin-physical { opacity:.55; font-size:6px; }
+    .pin.used { background:#ffffff14; color:white; font-weight:800; }
+    .pin.used .pin-dot { background:var(--yellow); box-shadow:0 0 0 2px #fff8,0 0 10px #f5c84c; }
+    .pin.connected { background:#e5f2e9; color:#133d30; }
+    .pin.connected .pin-dot { background:#fff; box-shadow:0 0 0 2px var(--green); }
+    .pin.power:not(.connected) .pin-label { color:#ffd7d3; }
+    .pin.ground:not(.connected) .pin-label { color:#c6e3fb; }
+
+    .connection-side { display:grid; grid-template-rows:auto 1fr auto; min-width:0; }
+    .connection-list { display:grid; align-content:start; padding:8px 16px; }
+    .connection { display:grid; grid-template-columns:18px minmax(0,1fr); align-items:start; min-height:50px; gap:9px; padding:10px 0; border-bottom:1px dashed var(--line); }
+    .connection:last-child { border-bottom:0; }
+    .wire-swatch { width:14px; height:14px; margin-top:2px; border:2px solid currentColor; border-radius:50%; }
+    .connection.done .wire-swatch { background:currentColor; box-shadow:0 0 0 3px #fff,0 0 0 4px currentColor; }
+    .connection-route { font-size:11px; font-weight:750; }
+    .connection-reason { margin-top:2px; color:var(--muted); font-size:9px; }
+    .question-box { padding:15px 16px 17px; border-top:1px solid var(--ink); background:#f8f6ef; }
+    .question-step { margin-bottom:3px; color:var(--green); font:800 9px ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.08em; }
+    .question { margin:0 0 11px; font-size:14px; font-weight:800; }
+    .choices { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:7px; }
+    .choice { min-height:43px; padding:8px 10px; border:1px solid var(--ink); border-radius:6px; background:var(--surface); color:var(--ink); font-size:10px; font-weight:750; cursor:pointer; }
+    .choice:hover { transform:translate(-1px,-1px); box-shadow:2px 2px 0 var(--ink); }
+    .feedback { min-height:20px; margin-top:9px; color:var(--muted); font-size:10px; }
+    .feedback.good { color:var(--green); font-weight:700; }
+    .feedback.bad { color:var(--red); font-weight:700; }
+    .question-actions { display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:8px; }
+    .text-button { padding:5px 0; border:0; border-bottom:1px solid currentColor; background:transparent; color:var(--muted); font-size:9px; cursor:pointer; }
+    .primary,.secondary { min-height:42px; padding:9px 14px; border:1px solid var(--ink); border-radius:6px; font-size:10px; font-weight:800; cursor:pointer; }
+    .primary { background:var(--ink); color:var(--surface); }
+    .primary:hover { background:var(--green); }
+    .secondary { background:var(--surface); color:var(--ink); }
+    .complete-panel strong { display:block; color:var(--green); font-size:13px; }
+    .complete-panel span { color:var(--muted); font-size:10px; }
+
+    .facts { display:grid; grid-template-columns:1fr 1fr 1.25fr; margin-top:14px; border:1px solid var(--ink); background:var(--surface); }
+    .fact { min-width:0; padding:13px 14px; border-right:1px solid var(--ink); }
+    .fact:last-child { border-right:0; }
+    .fact h3 { margin:0 0 5px; font-size:10px; }
+    .fact p,.fact ul { margin:0; color:var(--muted); font-size:9px; }
+    .fact ul { padding-left:15px; }
+    .fact.danger { background:#fff3e9; }
+    .fact.danger h3 { color:var(--red); }
+
+    .simulation-grid { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr); }
+    .instrument { position:relative; display:grid; min-height:360px; place-items:center; padding:28px; border-right:1px solid var(--ink); background:#171a18; color:white; }
+    .instrument::before { content:""; position:absolute; inset:14px; border:1px solid #ffffff28; pointer-events:none; }
+    .sim-lock { position:absolute; inset:0; z-index:3; display:grid; place-items:center; padding:40px; background:#171a18ee; color:#d4d5cf; text-align:center; font-size:11px; }
+    .sim-device { position:relative; z-index:1; display:grid; justify-items:center; gap:18px; }
+    .lamp { width:82px; height:82px; border:10px solid #363b38; border-radius:50%; background:#4b4e4b; transition:.15s; }
+    .lamp.on { border-color:#a48625; background:#ffe36d; box-shadow:0 0 20px #ffe36dcc,0 0 65px #ffe36d66; }
+    .lamp.red.on { border-color:#852d28; background:#ff6257; box-shadow:0 0 35px #ff625788; }
+    .lamp.amber.on { border-color:#88611e; background:#ffc653; box-shadow:0 0 35px #ffc65388; }
+    .lamp.green.on { border-color:#256744; background:#5ee291; box-shadow:0 0 35px #5ee29188; }
+    .traffic { display:flex; gap:12px; padding:15px; border:1px solid #ffffff33; border-radius:12px; background:#080a09; }
+    .traffic .lamp { width:58px; height:58px; border-width:7px; }
+    .instrument-button { min-width:150px; min-height:44px; border:1px solid #fff; border-radius:5px; background:white; color:#171816; font-size:10px; font-weight:850; cursor:pointer; }
+    .instrument-button:active { transform:translateY(2px); }
+    .readout { min-width:min(340px,72vw); padding:8px 11px; border:1px solid #72d9a7; background:#0b2118; color:#72d9a7; font:10px ui-monospace,SFMono-Regular,Menlo,monospace; text-align:center; }
+    input[type="range"] { width:min(310px,68vw); accent-color:#72d9a7; }
+    .sim-side { display:grid; align-content:start; }
+    .signal-panel,.quiz { padding:17px; }
+    .signal-panel { border-bottom:1px solid var(--ink); }
+    .section-kicker { margin:0 0 4px; color:var(--green); font:800 9px ui-monospace,SFMono-Regular,Menlo,monospace; letter-spacing:.08em; }
+    .signal-panel h3,.quiz h3 { margin:0 0 9px; font-size:13px; }
+    .signal-list { display:grid; gap:6px; margin:0; padding:0; list-style:none; }
+    .signal-item { display:flex; justify-content:space-between; gap:10px; padding:7px 0; border-bottom:1px dashed var(--line); font-size:9px; }
+    .signal-value { color:var(--green); font:800 9px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .quiz-question { margin:0 0 9px; color:var(--muted); font-size:10px; }
+    .quiz-options { display:grid; gap:6px; }
+    .quiz-option { padding:8px 9px; border:1px solid var(--line); border-radius:5px; background:#f7f4eb; color:var(--ink); text-align:left; font-size:9px; cursor:pointer; }
+    .quiz-option:hover { border-color:var(--ink); }
+    .quiz-result { min-height:18px; margin-top:8px; color:var(--muted); font-size:9px; }
+    .quiz-result.good { color:var(--green); font-weight:700; }
+    .quiz-result.bad { color:var(--red); font-weight:700; }
+
+    .real-grid { display:grid; grid-template-columns:minmax(0,1.1fr) minmax(300px,.9fr); }
+    .code-panel { min-width:0; border-right:1px solid var(--ink); }
+    .code-head,.terminal-head { display:flex; align-items:center; justify-content:space-between; min-height:43px; gap:10px; padding:8px 13px; border-bottom:1px solid var(--ink); }
+    .code-head strong,.terminal-head strong { font-size:10px; }
+    .copy-button { padding:5px 8px; border:1px solid var(--line); border-radius:4px; background:var(--surface); color:var(--ink); font-size:8px; cursor:pointer; }
+    pre { margin:0; overflow:auto; background:#171a18; color:#e9eee9; font:10px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace; tab-size:2; }
+    .code-panel pre { min-height:310px; padding:18px; }
+    .code-notes { margin:0; padding:13px 18px 16px 30px; border-top:1px solid var(--ink); color:var(--muted); font-size:9px; }
+    .code-notes li { margin:4px 0; }
+    .terminal-panel { min-width:0; background:#ebe8de; }
+    .terminal { min-height:210px; padding:14px; background:#0e110f; color:#c8f2d9; font:10px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:pre-wrap; }
+    .terminal-entry { padding:13px; border-bottom:1px solid var(--ink); }
+    .terminal-entry label { display:block; margin-bottom:6px; color:var(--muted); font-size:9px; }
+    .terminal-row { display:flex; gap:6px; }
+    .terminal-input { width:100%; min-width:0; height:39px; padding:8px 10px; border:1px solid var(--ink); border-radius:4px; background:var(--surface); font:10px ui-monospace,SFMono-Regular,Menlo,monospace; }
+    .terminal-run { flex:0 0 auto; padding:7px 11px; border:1px solid var(--ink); border-radius:4px; background:var(--ink); color:white; font-size:9px; font-weight:800; cursor:pointer; }
+    .hint-row { display:flex; justify-content:space-between; margin-top:6px; gap:10px; }
+    .hint-row span { color:var(--muted); font-size:8px; }
+    .setup-commands { padding:12px 13px; }
+    .setup-commands h3 { margin:0 0 6px; font-size:9px; }
+    .command { display:block; margin:5px 0; padding:7px 9px; overflow-x:auto; border:1px solid var(--line); background:var(--surface); font:8px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace; white-space:nowrap; }
+
+    .details { margin-top:14px; border:1px solid var(--ink); background:var(--surface); }
+    details { border-bottom:1px solid var(--ink); }
+    details:last-child { border-bottom:0; }
+    summary { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; cursor:pointer; font-size:10px; font-weight:800; list-style:none; }
+    summary::-webkit-details-marker { display:none; }
+    summary::after { content:"+"; color:var(--muted); font-size:16px; font-weight:400; }
+    details[open] summary::after { content:"−"; }
+    .detail-body { padding:0 14px 14px; color:var(--muted); font-size:9px; }
+    .detail-body ol,.detail-body ul { margin:0; padding-left:18px; }
+    .detail-body li { margin:5px 0; }
+    .lesson-nav { display:flex; justify-content:space-between; gap:8px; margin-top:20px; }
+    .lesson-nav button { width:min(220px,48%); }
+    .source-note { margin:24px 0 0; color:var(--muted); font-size:8px; text-align:center; }
+    .source-note a { text-underline-offset:2px; }
+
+    @media (max-width:980px) {
+      .app-shell { grid-template-columns:1fr; }
+      .course { position:static; height:auto; padding:13px 15px; border-right:0; border-bottom:1px solid var(--ink); }
+      .course h2,.course-copy,.safety-rule { display:none; }
+      .course .overline { margin-bottom:7px; }
+      .lesson-list { display:flex; overflow-x:auto; padding-bottom:3px; gap:5px; scrollbar-width:thin; }
+      .lesson-button { grid-template-columns:27px auto; min-width:120px; min-height:43px; border-color:var(--line); }
+      .done-word { display:none; }
+      main { padding-top:22px; }
+      .wire-layout,.simulation-grid,.real-grid { grid-template-columns:1fr; }
+      .pinout-wrap,.instrument,.code-panel { border-right:0; border-bottom:1px solid var(--ink); }
+      .facts { grid-template-columns:1fr 1fr; }
+      .fact:nth-child(2) { border-right:0; }
+      .fact:last-child { grid-column:1/-1; border-top:1px solid var(--ink); }
     }
-    @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; transition: none !important; } }
+    @media (max-width:620px) {
+      .header-inner { min-height:52px; padding-inline:12px; }
+      .brand-title { max-width:54vw; font-size:12px; }
+      .progress-track { width:54px; }
+      .progress-label { display:none; }
+      .course { padding-inline:10px; }
+      main { padding:18px 10px 50px; }
+      .lesson-header { grid-template-columns:1fr; gap:12px; }
+      .lesson-header h1 { font-size:36px; }
+      .lesson-subtitle { font-size:11px; }
+      .goal-note { width:100%; font-size:10px; }
+      .process-tab { min-height:44px; font-size:10px; }
+      .tab-index { display:block; margin:0; font-size:7px; }
+      .pinout-wrap { padding:10px; }
+      .board { min-height:330px; }
+      .pin-header { width:94%; }
+      .connection-list,.question-box { padding-inline:12px; }
+      .choices,.facts { grid-template-columns:1fr; }
+      .fact,.fact:nth-child(2) { border-right:0; border-bottom:1px solid var(--ink); }
+      .fact:last-child { grid-column:auto; border-top:0; border-bottom:0; }
+      .instrument { min-height:300px; padding:20px 12px; }
+      .traffic .lamp { width:46px; height:46px; }
+      .terminal-row { flex-direction:column; }
+      .terminal-run { min-height:38px; }
+      .lesson-nav button { width:50%; }
+    }
+    @media (prefers-reduced-motion:reduce) { * { scroll-behavior:auto!important; transition:none!important; } .choice:hover { transform:none; } }
   </style>
 </head>
 <body>
   <header class="app-header">
     <div class="header-inner">
-      <div class="brand">
-        <div class="brand-mark">Pi</div>
-        <div class="brand-title">電子工作シミュレータ <span class="version">v2</span></div>
-      </div>
-      <div class="header-progress" aria-label="コース進捗">
-        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-        <div class="progress-label" id="progressLabel">0 / 7 完了</div>
-      </div>
+      <div class="brand"><span class="brand-mark" aria-hidden="true"></span><div class="brand-title">Raspberry Pi 電子工作シミュレータ <span class="version">v3</span></div></div>
+      <div class="header-progress" aria-label="コース進捗"><div class="progress-track"><div class="progress-fill" id="progressFill"></div></div><div class="progress-label" id="progressLabel">0 / 7 完了</div></div>
     </div>
   </header>
-
-  <div class="shell">
-    <aside class="course-panel">
-      <p class="eyebrow">Beginner course</p>
-      <h2>ゼロから始めるGPIO</h2>
-      <p class="course-copy">正しい接続先を選び、回路を動かし、最後に1問だけ理解を確認します。</p>
+  <div class="app-shell">
+    <aside class="course">
+      <p class="overline">7 experiments / GPIO basics</p>
+      <h2>手を動かして覚える<br>電子工作入門</h2>
+      <p class="course-copy">配線を考え、動きを確かめ、最後に実機のターミナルまで進みます。</p>
       <nav class="lesson-list" id="lessonList" aria-label="レッスン一覧"></nav>
-      <div class="safety-mini"><strong>実機の基本：</strong> 配線変更は電源OFF。GPIOへ5Vを直接入れない。LEDには必ず抵抗を入れる。</div>
+      <div class="safety-rule"><strong>電源OFFで配線。</strong><br>GPIOへ5Vを直接入れない。LEDには抵抗を1本ずつ入れる。</div>
     </aside>
-
     <main>
-      <section class="lesson-hero" id="lessonTop">
-        <div class="lesson-meta" id="lessonMeta"></div>
-        <h1 id="lessonTitle"></h1>
-        <p class="lesson-subtitle" id="lessonSubtitle"></p>
-        <div class="goal"><strong>今回できること</strong><span id="lessonGoal"></span></div>
+      <section class="lesson-header" id="lessonTop">
+        <div><div class="lesson-labels" id="lessonLabels"></div><h1 id="lessonTitle"></h1><p class="lesson-subtitle" id="lessonSubtitle"></p></div>
+        <div class="goal-note"><strong>GOAL</strong><span id="lessonGoal"></span></div>
       </section>
+      <nav class="process-nav" aria-label="レッスン工程">
+        <button class="process-tab active" data-stage-tab="wire"><span class="tab-index">01</span>配線する <span class="tab-check" id="wireTabCheck"></span></button>
+        <button class="process-tab" data-stage-tab="simulate"><span class="tab-index">02</span>動かす</button>
+        <button class="process-tab" data-stage-tab="real"><span class="tab-index">03</span>実機で作る</button>
+      </nav>
 
-      <div class="grid">
-        <section class="card">
-          <div class="card-head">
-            <div><div class="card-title">配線チャレンジ</div><div class="card-kicker">接続先を選ぶと、回路図に線が増えます</div></div>
-            <div class="chip" id="wireCount">0 / 0</div>
+      <section class="stage active" data-stage="wire">
+        <div class="workbench">
+          <div class="bench-head"><div><h2 class="bench-title">配線ワークベンチ</h2><div class="bench-note">黄色は今回使う端子、白は接続済み</div></div><span class="count" id="wireCount">0 / 0</span></div>
+          <div class="wire-layout">
+            <div class="pinout-wrap">
+              <div class="pinout-caption"><strong>40ピン GPIO</strong><span>物理番号 / BCM名</span></div>
+              <div class="board"><span class="board-name">Raspberry Pi</span><span class="board-note">GPIO header / top view</span><div class="pin-header" id="pinHeader"></div></div>
+            </div>
+            <div class="connection-side">
+              <div class="bench-head"><h3 class="bench-title">接続リスト</h3><span class="bench-note">上から順に配線</span></div>
+              <div class="connection-list" id="connectionList"></div>
+              <div class="question-box">
+                <div id="wirePrompt"></div><div class="feedback" id="feedback" role="status" aria-live="polite"></div>
+                <div class="question-actions"><button class="text-button" id="resetWiring">配線を最初から</button><button class="primary" id="trySimulation" hidden>動作を試す →</button></div>
+              </div>
+            </div>
           </div>
-          <div class="circuit-stage" id="circuitStage" aria-label="回路図"></div>
-          <div class="wiring-panel">
-            <div class="step-count" id="stepCount"></div>
-            <p class="wiring-question" id="wiringQuestion"></p>
-            <div class="choices" id="choices"></div>
-            <div class="feedback" id="feedback" role="status" aria-live="polite"></div>
-            <div class="wire-actions"><button class="ghost" id="resetWiring">配線を最初から</button></div>
-          </div>
-        </section>
-
-        <div class="side-stack">
-          <section class="card">
-            <div class="card-head"><h2 class="card-title">用意するもの</h2><span class="card-kicker" id="partsCount"></span></div>
-            <div class="card-body"><ul class="parts" id="parts"></ul></div>
-          </section>
-          <section class="card">
-            <div class="card-head"><h2 class="card-title">先に知ること</h2></div>
-            <div class="card-body"><p class="concept" id="concept"></p></div>
-          </section>
-          <div class="danger-note" id="safetyNote"></div>
         </div>
-      </div>
-
-      <div class="sim-layout section">
-        <section class="card">
-          <div class="card-head"><div><h2 class="card-title">動作シミュレーション</h2><div class="card-kicker">配線完成後に操作できます</div></div></div>
-          <div class="simulator" id="simulator"></div>
-        </section>
-        <section class="card">
-          <div class="quiz" id="quiz"></div>
-        </section>
-      </div>
-
-      <section class="card section">
-        <details open>
-          <summary>Pythonコードと意味</summary>
-          <div class="detail-body">
-            <div class="code-wrap"><pre><code id="code"></code></pre><button class="copy" id="copyCode">コピー</button></div>
-            <ul class="explain-list" id="codeNotes"></ul>
-          </div>
-        </details>
-        <details>
-          <summary>実機で動かす手順</summary>
-          <div class="detail-body" id="realSteps"></div>
-        </details>
-        <details>
-          <summary>動かないときの確認</summary>
-          <div class="detail-body"><ul class="real-list" id="troubleshooting"></ul></div>
-        </details>
+        <div class="facts">
+          <section class="fact"><h3>用意するもの</h3><ul id="parts"></ul></section>
+          <section class="fact"><h3>先に知ること</h3><p id="concept"></p></section>
+          <section class="fact danger"><h3>壊さないために</h3><p id="safety"></p></section>
+        </div>
       </section>
 
-      <div class="lesson-nav">
-        <button class="action secondary" id="prevLesson">← 前のレッスン</button>
-        <button class="action" id="nextLesson">次のレッスン →</button>
-      </div>
-      <p class="footer-note">これは学習用の簡易シミュレータです。実機では部品の仕様書とRaspberry Pi公式資料も確認してください。</p>
+      <section class="stage" data-stage="simulate">
+        <div class="workbench">
+          <div class="bench-head"><div><h2 class="bench-title">動作シミュレーション</h2><div class="bench-note">操作とGPIOの状態を同時に確認</div></div></div>
+          <div class="simulation-grid">
+            <div class="instrument" id="instrument"></div>
+            <div class="sim-side">
+              <section class="signal-panel"><p class="section-kicker">LIVE SIGNAL</p><h3>いま回路で起きていること</h3><ul class="signal-list" id="signalList"></ul></section>
+              <section class="quiz" id="quiz"></section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stage" data-stage="real">
+        <div class="workbench">
+          <div class="bench-head"><div><h2 class="bench-title">実機へ移す</h2><div class="bench-note">コードを保存して、ターミナルから動かす</div></div></div>
+          <div class="real-grid">
+            <section class="code-panel"><div class="code-head"><strong>lesson.py</strong><button class="copy-button" id="copyCode">コードをコピー</button></div><pre><code id="code"></code></pre><ol class="code-notes" id="codeNotes"></ol></section>
+            <section class="terminal-panel">
+              <div class="terminal-head"><strong>ターミナル練習</strong><span class="bench-note">安全な疑似画面です</span></div>
+              <pre class="terminal" id="terminal" aria-live="polite"></pre>
+              <div class="terminal-entry">
+                <label for="terminalInput">プログラムを開始するコマンドを入力</label>
+                <div class="terminal-row"><input class="terminal-input" id="terminalInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="$ コマンド"><button class="terminal-run" id="terminalRun">実行</button></div>
+                <div class="hint-row"><span>ヒント：python3 で lesson.py を開く</span><button class="text-button" id="terminalHint">答えを見る</button></div>
+              </div>
+              <div class="setup-commands" id="setupCommands"></div>
+            </section>
+          </div>
+        </div>
+        <div class="details">
+          <details open><summary>実機での手順</summary><div class="detail-body" id="realSteps"></div></details>
+          <details><summary>動かないときの確認</summary><div class="detail-body"><ul id="troubleshooting"></ul></div></details>
+          <details><summary>GPIO番号の読み方</summary><div class="detail-body">コードの <code>LED(17)</code> はBCM番号のGPIO17です。基板上の通し番号では物理11番です。この教材では両方を並べて表示します。</div></details>
+        </div>
+      </section>
+
+      <div class="lesson-nav"><button class="secondary" id="prevLesson">← 前のレッスン</button><button class="primary" id="nextLesson">次のレッスン →</button></div>
+      <p class="source-note">学習設計：<a href="https://projects.raspberrypi.org/en/projects/physical-computing" target="_blank" rel="noreferrer">Raspberry Pi Foundation</a> / コード：<a href="https://gpiozero.readthedocs.io/en/stable/recipes.html" target="_blank" rel="noreferrer">GPIO Zero</a> / 即時フィードバック：<a href="https://docs.wokwi.com/" target="_blank" rel="noreferrer">Wokwi</a></p>
     </main>
   </div>
-
   <script>
     (() => {
-      const lessons = [
+      const pinLabels={1:'3V3',2:'5V',3:'GPIO2',4:'5V',5:'GPIO3',6:'GND',7:'GPIO4',8:'GPIO14',9:'GND',10:'GPIO15',11:'GPIO17',12:'GPIO18',13:'GPIO27',14:'GND',15:'GPIO22',16:'GPIO23',17:'3V3',18:'GPIO24',19:'GPIO10',20:'GND',21:'GPIO9',22:'GPIO25',23:'GPIO11',24:'GPIO8',25:'GND',26:'GPIO7',27:'ID_SD',28:'ID_SC',29:'GPIO5',30:'GND',31:'GPIO6',32:'GPIO12',33:'GPIO13',34:'GND',35:'GPIO19',36:'GPIO16',37:'GPIO26',38:'GPIO20',39:'GND',40:'GPIO21'};
+      const W=(pin,from,to,options,why,wrong,color)=>({pin,from,to,options,why,wrong,color});
+      const lessons=[
         {
-          id: 'led', level: '入門', time: '約10分', title: 'LEDを光らせる', subtitle: '電気の出口「GPIO出力」を、いちばん小さな回路で体験します。',
-          goal: 'GPIO17から電気を出し、抵抗を通してLEDを安全に点灯できる。',
-          parts: ['LED × 1', '330Ω抵抗 × 1', 'ジャンパーワイヤー × 2'],
-          concept: '<strong>GPIO</strong>は、Raspberry Piが電気を出したり読んだりする端子です。LEDは長い脚が＋側、短い脚が−側です。',
-          safety: '<strong>重要：</strong> LEDへ抵抗なしで電流を流すと、LEDやGPIOを傷めるおそれがあります。',
-          wires: [
-            { from: 'GPIO17（物理11番）', to: '330Ω抵抗', options: ['330Ω抵抗', '5V', 'LEDの短い脚'], why: '抵抗がLEDへ流れる電流を安全な量に抑えます。', color: '#ff6b6b' },
-            { from: '330Ω抵抗', to: 'LEDの長い脚', options: ['LEDの長い脚', 'LEDの短い脚', '3.3V'], why: '長い脚（アノード）をGPIO側につなぎます。', color: '#ffb84d' },
-            { from: 'LEDの短い脚', to: 'GND（物理6番）', options: ['GPIO18', 'GND（物理6番）', '5V'], why: 'GNDへ戻る道ができると回路が一周します。', color: '#6ea8fe' }
+          id:'led',level:'入門',time:'10分',title:'LEDを光らせる',subtitle:'電気の出口「GPIO出力」を、いちばん小さな回路で体験します。',
+          goal:'GPIO17から電気を出し、抵抗を通してLEDを安全に点灯できる。',
+          parts:['LED × 1','330Ω抵抗 × 1','ジャンパーワイヤー × 2'],
+          concept:'GPIOは、Raspberry Piが電気を出したり読んだりする端子。コードではBCM番号を使います。',
+          safety:'LEDへ抵抗なしで電流を流すと、LEDやGPIOを傷めます。長い脚が＋側、短い脚が−側です。',
+          wires:[
+            W(11,'GPIO17（物理11番）','330Ω抵抗',['330Ω抵抗','5V','LEDの短い脚'],'抵抗がLEDへ流れる電流を安全な量に抑えます。','5VやLEDへ直結すると過電流の危険があります。先に抵抗へつなぎます。','#d94c3f'),
+            W(null,'330Ω抵抗','LEDの長い脚',['LEDの長い脚','LEDの短い脚','3.3V'],'長い脚（アノード）をGPIO側につなぎます。','LEDには向きがあります。抵抗側は長い脚です。','#e4962f'),
+            W(6,'LEDの短い脚','GND（物理6番）',['GPIO18','GND（物理6番）','5V'],'GNDへ戻る道ができ、回路が一周します。','短い脚はGNDへ戻します。5Vには接続しません。','#2878b5')
           ],
-          sim: 'led', code: `from gpiozero import LED\nfrom time import sleep\n\nled = LED(17)\n\nwhile True:\n    led.on()\n    sleep(1)\n    led.off()\n    sleep(1)`,
-          notes: ['LED(17) の17は物理ピン番号ではなくGPIO番号です。', 'on() と off() でGPIOのHIGH / LOWを切り替えます。', 'sleep(1) は状態を1秒保ちます。'],
-          setup: [], quiz: { q: 'LEDに330Ω抵抗を入れる主な理由は？', options: ['明るさの色を変えるため', '流れる電流を制限するため', 'Pythonを高速化するため'], correct: 1, why: '抵抗はLEDとGPIOに流れる電流を制限します。' },
-          trouble: ['LEDの長い脚と短い脚が逆でないか確認する。', 'コードの17と、接続したGPIO17が一致しているか確認する。', '抵抗が330Ω付近（橙・橙・茶）か確認する。']
+          sim:'led',signals:[['GPIO17','LOW'],['LED','消灯'],['電流','流れていない']],
+          code:"from gpiozero import LED\nfrom time import sleep\n\nled = LED(17)\n\nwhile True:\n    led.on()\n    sleep(1)\n    led.off()\n    sleep(1)",
+          notes:['LED(17) の17は物理番号ではなくBCM番号です。','on() / off() でGPIOのHIGH / LOWを切り替えます。','sleep(1) は状態を1秒保ちます。'],
+          setup:[],terminal:'GPIO17 = HIGH  → LED点灯\nGPIO17 = LOW   → LED消灯\n（Ctrl + C で終了）',
+          quiz:{q:'LEDに330Ω抵抗を入れる主な理由は？',options:['光の色を変える','流れる電流を制限する','Pythonを速くする'],correct:1,why:'抵抗はLEDとGPIOに流れる電流を制限します。'},
+          trouble:['LEDの長い脚と短い脚が逆でないか確認する。','コードの17と、接続したGPIO17（物理11番）が一致しているか確認する。','抵抗が330Ω付近（橙・橙・茶）か確認する。']
         },
         {
-          id: 'button', level: '入門', time: '約10分', title: 'ボタンの入力を読む', subtitle: '人が押した操作を、Raspberry Piへ「入力」として伝えます。',
-          goal: '内部プルアップを使い、ボタンを押したときのHIGH / LOWの変化を読める。',
-          parts: ['タクトスイッチ × 1', 'ジャンパーワイヤー × 2'],
-          concept: '<strong>入力</strong>は外部の状態を読み取ることです。内部プルアップでは、通常はHIGH、ボタンでGNDにつながるとLOWになります。',
-          safety: '<strong>注意：</strong> 4本脚のタクトスイッチは、同じ側の2本が内部でつながっています。向きを90°間違えると常に押された状態になります。',
-          wires: [
-            { from: 'GPIO27（物理13番）', to: 'ボタンの片側', options: ['3.3V', 'ボタンの片側', '5V'], why: 'GPIO27でボタンの状態を読み取ります。', color: '#b58cff' },
-            { from: 'ボタンの反対側', to: 'GND（物理14番）', options: ['GND（物理14番）', '5V', 'GPIO17'], why: '押すとGPIO27がGNDにつながりLOWになります。', color: '#6ea8fe' }
+          id:'button',level:'入門',time:'10分',title:'ボタンの入力を読む',subtitle:'人が押した操作を、Raspberry Piへ「入力」として伝えます。',
+          goal:'内部プルアップを使い、押したときのHIGH / LOWの変化を読める。',
+          parts:['タクトスイッチ × 1','ジャンパーワイヤー × 2'],
+          concept:'入力は外部の状態を読むこと。内部プルアップでは通常HIGH、ボタンでGNDにつながるとLOWです。',
+          safety:'4本脚のタクトスイッチは同じ側の2本が内部で接続済み。中央の溝をまたぐ向きに置きます。',
+          wires:[
+            W(13,'GPIO27（物理13番）','ボタンの片側',['3.3V','ボタンの片側','5V'],'GPIO27でボタンの状態を読み取ります。','GPIO27は入力としてボタンへつなぎます。電源へ直結しません。','#7257a7'),
+            W(14,'ボタンの反対側','GND（物理14番）',['GND（物理14番）','5V','GPIO17'],'押すとGPIO27がGNDにつながりLOWになります。','内部プルアップでは、ボタンの反対側をGNDへつなぎます。','#2878b5')
           ],
-          sim: 'button', code: `from gpiozero import Button\nfrom signal import pause\n\nbutton = Button(27, pull_up=True)\n\nbutton.when_pressed = lambda: print("押された")\nbutton.when_released = lambda: print("離された")\n\npause()`,
-          notes: ['pull_up=True でRaspberry Pi内蔵の抵抗を使います。', 'when_pressed は押された瞬間に処理を呼びます。', 'pause() がプログラムを終了させず、入力を待ち続けます。'],
-          setup: [], quiz: { q: '内部プルアップの配線で、ボタンを押した瞬間のGPIO27は？', options: ['HIGH', 'LOW', '5V'], correct: 1, why: 'ボタンを押すとGPIO27がGNDへつながるためLOWになります。' },
-          trouble: ['ボタンをブレッドボードの中央の溝をまたぐ向きに置く。', '押していないのにLOWなら、同じ側の脚へ2本とも接続していないか確認する。', 'GPIO番号と物理ピン番号を混同していないか確認する。']
+          sim:'button',signals:[['GPIO27','HIGH'],['ボタン','離れている'],['入力','1']],
+          code:"from gpiozero import Button\nfrom signal import pause\n\nbutton = Button(27, pull_up=True)\n\nbutton.when_pressed = lambda: print(\"押された\")\nbutton.when_released = lambda: print(\"離された\")\n\npause()",
+          notes:['pull_up=True でRaspberry Pi内蔵の抵抗を使います。','when_pressed は押された瞬間に処理を呼びます。','pause() がプログラムを終了させず、入力を待ち続けます。'],
+          setup:[],terminal:'入力待機中...\nボタンを押すと「押された」と表示します。\n（Ctrl + C で終了）',
+          quiz:{q:'内部プルアップでボタンを押した瞬間のGPIO27は？',options:['HIGH','LOW','5V'],correct:1,why:'押すとGPIO27がGNDへつながるためLOWです。'},
+          trouble:['ボタンをブレッドボード中央の溝をまたぐ向きに置く。','常にLOWなら、同じ側の脚へ2本とも接続していないか確認する。','GPIO番号と物理ピン番号を混同していないか確認する。']
         },
         {
-          id: 'button-led', level: '基礎', time: '約15分', title: 'ボタンでLEDを操作する', subtitle: '入力と出力を組み合わせて、「押している間だけ光る」装置を作ります。',
-          goal: 'ボタンのイベントをLEDの動作へつなぎ、入力→処理→出力の流れを理解する。',
-          parts: ['LED × 1', '330Ω抵抗 × 1', 'タクトスイッチ × 1', 'ジャンパーワイヤー × 4'],
-          concept: '<strong>イベント</strong>は「ボタンが押された」などの出来事です。出来事に対してLEDをONにする処理を登録します。',
-          safety: '<strong>設計の基本：</strong> 入力用GPIO27と出力用GPIO17を直接つながないでください。それぞれ部品を介してGNDへつなぎます。',
-          wires: [
-            { from: 'GPIO17（物理11番）', to: '330Ω抵抗', options: ['330Ω抵抗', 'ボタン', '5V'], why: 'LED側の出力回路を作ります。', color: '#ff6b6b' },
-            { from: '330Ω抵抗', to: 'LEDの長い脚', options: ['LEDの短い脚', 'LEDの長い脚', 'GND'], why: 'LEDの＋側を抵抗へつなぎます。', color: '#ffb84d' },
-            { from: 'LEDの短い脚', to: 'GND', options: ['3.3V', 'GPIO27', 'GND'], why: 'LED回路をGNDへ戻します。', color: '#6ea8fe' },
-            { from: 'GPIO27（物理13番）', to: 'ボタンの片側', options: ['ボタンの片側', 'LEDの長い脚', '5V'], why: 'GPIO27をボタン入力にします。', color: '#b58cff' },
-            { from: 'ボタンの反対側', to: 'GND', options: ['GPIO17', 'GND', '3.3V'], why: '押したときにGPIO27がLOWになる回路です。', color: '#5eead4' }
+          id:'button-led',level:'基礎',time:'15分',title:'ボタンでLEDを操作する',subtitle:'入力と出力を組み合わせて、「押している間だけ光る」装置を作ります。',
+          goal:'ボタンのイベントをLEDへつなぎ、入力 → 処理 → 出力の流れを理解する。',
+          parts:['LED × 1','330Ω抵抗 × 1','タクトスイッチ × 1','ジャンパーワイヤー × 4'],
+          concept:'イベントは「押された」などの出来事。出来事が起きたときの処理を、あらかじめ登録します。',
+          safety:'入力GPIO27と出力GPIO17を直接つながず、それぞれ部品を介してGNDへ接続します。',
+          wires:[
+            W(11,'GPIO17（物理11番）','330Ω抵抗',['330Ω抵抗','ボタン','5V'],'LED側の出力回路を作ります。','GPIO17は抵抗を介してLEDへつなぎます。','#d94c3f'),
+            W(null,'330Ω抵抗','LEDの長い脚',['LEDの短い脚','LEDの長い脚','GND'],'LEDの＋側を抵抗へつなぎます。','抵抗側はLEDの長い脚です。','#e4962f'),
+            W(6,'LEDの短い脚','GND',['3.3V','GPIO27','GND'],'LED回路をGNDへ戻します。','LEDの短い脚はGNDへ戻します。','#2878b5'),
+            W(13,'GPIO27（物理13番）','ボタンの片側',['ボタンの片側','LEDの長い脚','5V'],'GPIO27をボタン入力にします。','GPIO27はボタン入力専用です。','#7257a7'),
+            W(14,'ボタンの反対側','GND',['GPIO17','GND','3.3V'],'押したときGPIO27がLOWになる回路です。','内部プルアップでは反対側をGNDへつなぎます。','#2878b5')
           ],
-          sim: 'button-led', code: `from gpiozero import LED, Button\nfrom signal import pause\n\nled = LED(17)\nbutton = Button(27, pull_up=True)\n\nbutton.when_pressed = led.on\nbutton.when_released = led.off\n\npause()`,
-          notes: ['led.on の後ろに () を付けないことで、後で呼ぶ処理として登録します。', '押した瞬間にon、離した瞬間にoffが呼ばれます。', '入力と出力を別のGPIOへ割り当てています。'],
-          setup: [], quiz: { q: 'button.when_pressed = led.on の役割は？', options: ['今すぐLEDを点灯する', '押されたときにled.onを呼ぶよう登録する', 'LEDを削除する'], correct: 1, why: '関数を実行せず、ボタンイベントで後から呼ぶよう登録しています。' },
-          trouble: ['LED単体とボタン単体を分けて確認してから組み合わせる。', 'led.on() と書かず led.on と登録しているか確認する。', 'GNDは複数の部品で共有できます。']
+          sim:'button-led',signals:[['GPIO27','HIGH'],['GPIO17','LOW'],['LED','消灯']],
+          code:"from gpiozero import LED, Button\nfrom signal import pause\n\nled = LED(17)\nbutton = Button(27, pull_up=True)\n\nbutton.when_pressed = led.on\nbutton.when_released = led.off\n\npause()",
+          notes:['led.on の後ろに () を付けず、後で呼ぶ処理として登録します。','押した瞬間にon、離した瞬間にoffが呼ばれます。','入力と出力を別のGPIOへ割り当てています。'],
+          setup:[],terminal:'入力待機中...\nボタン LOW → GPIO17 HIGH → LED点灯\n（Ctrl + C で終了）',
+          quiz:{q:'button.when_pressed = led.on の役割は？',options:['今すぐ点灯','押されたときにled.onを呼ぶよう登録','LEDを削除'],correct:1,why:'関数を今は実行せず、ボタンイベントで後から呼ぶよう登録します。'},
+          trouble:['LED単体とボタン単体を分けて確認してから組み合わせる。','led.on() ではなく led.on と登録しているか確認する。','GNDは複数の部品で共有できます。']
         },
         {
-          id: 'pwm', level: '基礎', time: '約12分', title: 'LEDの明るさを変える', subtitle: '高速なON / OFFの割合を変えて、アナログのような明るさを作ります。',
-          goal: 'PWMの割合を0〜1で指定し、LEDの明るさを連続的に変えられる。',
-          parts: ['LED × 1', '330Ω抵抗 × 1', 'ジャンパーワイヤー × 2'],
-          concept: '<strong>PWM</strong>は非常に速くON / OFFを繰り返し、ONの時間の割合で平均の明るさを変える方法です。',
-          safety: '<strong>覚え方：</strong> value=0 は消灯、0.5 は半分、1 は最大です。1を超える値は指定しません。',
-          wires: [
-            { from: 'GPIO18（物理12番）', to: '330Ω抵抗', options: ['5V', '330Ω抵抗', 'GPIO17'], why: 'GPIO18をPWM出力として使います。', color: '#ff6b6b' },
-            { from: '330Ω抵抗', to: 'LEDの長い脚', options: ['LEDの長い脚', 'LEDの短い脚', '3.3V'], why: '抵抗を通った出力をLEDの＋側へ入れます。', color: '#ffb84d' },
-            { from: 'LEDの短い脚', to: 'GND', options: ['5V', 'GND', 'GPIO27'], why: 'LEDの−側をGNDへ戻します。', color: '#6ea8fe' }
+          id:'pwm',level:'基礎',time:'12分',title:'LEDの明るさを変える',subtitle:'高速なON / OFFの割合を変え、アナログのような明るさを作ります。',
+          goal:'PWMの割合を0〜1で指定し、LEDの明るさを連続的に変えられる。',
+          parts:['LED × 1','330Ω抵抗 × 1','ジャンパーワイヤー × 2'],
+          concept:'PWMは非常に速いON / OFFを繰り返し、ON時間の割合で平均の明るさを変える方法です。',
+          safety:'value=0 は消灯、0.5 は半分、1 は最大。0〜1の範囲だけを指定します。',
+          wires:[
+            W(12,'GPIO18（物理12番）','330Ω抵抗',['5V','330Ω抵抗','GPIO17'],'GPIO18をPWM出力として使います。','PWM出力も抵抗を介してLEDへつなぎます。','#d94c3f'),
+            W(null,'330Ω抵抗','LEDの長い脚',['LEDの長い脚','LEDの短い脚','3.3V'],'抵抗を通った出力をLEDの＋側へ入れます。','抵抗側は長い脚です。','#e4962f'),
+            W(14,'LEDの短い脚','GND',['5V','GND','GPIO27'],'LEDの−側をGNDへ戻します。','LEDの短い脚はGNDへつなぎます。','#2878b5')
           ],
-          sim: 'pwm', code: `from gpiozero import PWMLED\nfrom time import sleep\n\nled = PWMLED(18)\n\nwhile True:\n    for level in range(11):\n        led.value = level / 10\n        sleep(0.1)\n    for level in range(10, -1, -1):\n        led.value = level / 10\n        sleep(0.1)`,
-          notes: ['PWMLEDを使うとvalueへ0〜1の小数を指定できます。', 'range(11) は0から10までの11段階です。', '2つ目のforは10から0へ戻し、ゆっくり暗くします。'],
-          setup: [], quiz: { q: 'led.value = 0.25 は何を表す？', options: ['25秒点灯', 'GPIO25を使う', '約25%の明るさ'], correct: 2, why: 'PWMLEDのvalueは0〜1で明るさの割合を表します。' },
-          trouble: ['通常のLEDではなくPWMLEDをimportしているか確認する。', 'valueが0〜1の範囲か確認する。', 'ちらつく場合はソフトウェアや電源負荷も確認する。']
+          sim:'pwm',signals:[['GPIO18','PWM'],['duty','35%'],['LED','明るさ35%']],
+          code:"from gpiozero import PWMLED\nfrom time import sleep\n\nled = PWMLED(18)\n\nwhile True:\n    for level in range(11):\n        led.value = level / 10\n        sleep(0.1)\n    for level in range(10, -1, -1):\n        led.value = level / 10\n        sleep(0.1)",
+          notes:['PWMLEDではvalueへ0〜1の小数を指定できます。','range(11) は0から10までの11段階です。','2つ目のforで10から0へ戻し、ゆっくり暗くします。'],
+          setup:[],terminal:'GPIO18 PWM を開始\n明るさ 0% → 100% → 0%\n（Ctrl + C で終了）',
+          quiz:{q:'led.value = 0.25 は何を表す？',options:['25秒点灯','GPIO25を使う','約25%の明るさ'],correct:2,why:'PWMLEDのvalueは0〜1で明るさの割合を表します。'},
+          trouble:['LEDではなくPWMLEDをimportしているか確認する。','valueが0〜1の範囲か確認する。','ちらつく場合は電源負荷や接触不良も確認する。']
         },
         {
-          id: 'traffic', level: '応用', time: '約20分', title: '信号機を作る', subtitle: '3つの出力を順番に切り替え、装置の「状態」を設計します。',
-          goal: '赤・黄・緑の3つのLEDを安全に配線し、順序と時間をコードで制御できる。',
-          parts: ['赤・黄・緑LED 各1', '330Ω抵抗 × 3', 'ジャンパーワイヤー × 6'],
-          concept: '<strong>状態</strong>とは、今どのLEDが点灯しているかという装置の現在地です。時間ごとに状態を切り替えると信号機になります。',
-          safety: '<strong>配線のコツ：</strong> 各LEDに1本ずつ抵抗が必要です。1本の抵抗を3つで共用しないでください。',
-          wires: [
-            { from: 'GPIO17', to: '抵抗 → 赤LED', options: ['抵抗 → 赤LED', '緑LEDへ直結', '5V'], why: 'GPIO17を赤の出力に割り当てます。', color: '#ff6159' },
-            { from: 'GPIO27', to: '抵抗 → 黄LED', options: ['GND', '抵抗 → 黄LED', '赤LEDへ直結'], why: 'GPIO27を黄の出力に割り当てます。', color: '#ffbf47' },
-            { from: 'GPIO22', to: '抵抗 → 緑LED', options: ['5V', '抵抗 → 緑LED', 'GPIO17'], why: 'GPIO22を緑の出力に割り当てます。', color: '#57d782' },
-            { from: '3つのLEDの短い脚', to: 'GND', options: ['3.3V', '5V', 'GND'], why: '3つのLEDは同じGNDを共有できます。', color: '#6ea8fe' }
+          id:'traffic',level:'応用',time:'20分',title:'信号機を作る',subtitle:'3つの出力を順番に切り替え、装置の「状態」を設計します。',
+          goal:'赤・黄・緑のLEDを安全に配線し、順序と時間をコードで制御できる。',
+          parts:['赤・黄・緑LED 各1','330Ω抵抗 × 3','ジャンパーワイヤー × 6'],
+          concept:'状態とは、今どのLEDが点灯しているかという装置の現在地。時間ごとに状態を切り替えます。',
+          safety:'LEDごとに抵抗が1本必要。1本の抵抗を3灯で共用しません。',
+          wires:[
+            W(11,'GPIO17（物理11番）','抵抗 → 赤LED',['抵抗 → 赤LED','緑LEDへ直結','5V'],'GPIO17を赤の出力に割り当てます。','赤LEDも必ず抵抗を介して接続します。','#d94c3f'),
+            W(13,'GPIO27（物理13番）','抵抗 → 黄LED',['GND','抵抗 → 黄LED','赤LEDへ直結'],'GPIO27を黄の出力に割り当てます。','黄LED専用の抵抗へつなぎます。','#e4962f'),
+            W(15,'GPIO22（物理15番）','抵抗 → 緑LED',['5V','抵抗 → 緑LED','GPIO17'],'GPIO22を緑の出力に割り当てます。','緑LED専用の抵抗へつなぎます。','#176b50'),
+            W(14,'3つのLEDの短い脚','GND',['3.3V','5V','GND'],'3つのLEDは同じGNDを共有できます。','3つの短い脚は共通GNDへ戻します。','#2878b5')
           ],
-          sim: 'traffic', code: `from gpiozero import LED\nfrom time import sleep\n\nred = LED(17)\namber = LED(27)\ngreen = LED(22)\n\nwhile True:\n    green.on(); red.off()\n    sleep(5)\n    green.off(); amber.on()\n    sleep(1)\n    amber.off(); red.on()\n    sleep(5)`,
-          notes: ['部品名を変数名にすると、何を操作しているか読みやすくなります。', '同じ瞬間に不要なLEDをoffにして状態を明確にします。', 'sleepの秒数を変えるだけで信号の長さを調整できます。'],
-          setup: [], quiz: { q: '3つのLEDを安全に使う抵抗の数は？', options: ['1本', '2本', '3本'], correct: 2, why: 'LEDごとの電流を制限するため、各LEDに1本ずつ必要です。' },
-          trouble: ['1色ずつ単独で点灯させ、GPIOの割り当てを確認する。', '3つの短い脚がGNDレールへつながっているか確認する。', '同時点灯が意図と違う場合はoff()の位置を確認する。']
+          sim:'traffic',signals:[['GPIO17 / 赤','LOW'],['GPIO27 / 黄','LOW'],['GPIO22 / 緑','HIGH']],
+          code:"from gpiozero import LED\nfrom time import sleep\n\nred = LED(17)\namber = LED(27)\ngreen = LED(22)\n\nwhile True:\n    green.on(); red.off()\n    sleep(5)\n    green.off(); amber.on()\n    sleep(1)\n    amber.off(); red.on()\n    sleep(5)",
+          notes:['部品名を変数名にすると操作対象が読みやすくなります。','不要なLEDをoffにして状態を明確にします。','sleepの秒数で各信号の長さを調整できます。'],
+          setup:[],terminal:'信号機を開始\nGREEN → AMBER → RED\n（Ctrl + C で終了）',
+          quiz:{q:'3つのLEDを安全に使う抵抗の数は？',options:['1本','2本','3本'],correct:2,why:'LEDごとの電流を制限するため、各LEDに1本ずつ必要です。'},
+          trouble:['1色ずつ単独で点灯させ、GPIO割り当てを確認する。','3つの短い脚がGNDレールへつながっているか確認する。','同時点灯が意図と違う場合はoff()の位置を確認する。']
         },
         {
-          id: 'buzzer', level: '応用', time: '約15分', title: 'ボタン式アラーム', subtitle: '入力をきっかけに音を出し、「反応する装置」へ発展させます。',
-          goal: 'ボタン入力で3.3V対応アクティブブザーモジュールを鳴らせる。',
-          parts: ['3.3V対応アクティブブザーモジュール × 1', 'タクトスイッチ × 1', 'ジャンパーワイヤー × 5'],
-          concept: '<strong>アクチュエーター</strong>は、電気の命令を光・音・動きへ変える部品です。ここではブザーが音へ変えます。',
-          safety: '<strong>部品確認：</strong> 大電流のブザーや5V専用品をGPIOへ直接つながないでください。今回は3.3Vの信号入力があるモジュールを想定します。',
-          wires: [
-            { from: '3.3V（物理1番）', to: 'ブザー VCC', options: ['ブザー VCC', 'ブザー GND', 'ボタン'], why: 'モジュールへ3.3V電源を供給します。', color: '#ff6b6b' },
-            { from: 'GND', to: 'ブザー GND', options: ['ブザー SIG', '5V', 'ブザー GND'], why: 'モジュールの電源回路を完成させます。', color: '#6ea8fe' },
-            { from: 'GPIO23（物理16番）', to: 'ブザー SIG', options: ['ブザー VCC', 'ブザー SIG', 'GND'], why: 'GPIO23の出力で音のON / OFFを指示します。', color: '#ffbf47' },
-            { from: 'GPIO27', to: 'ボタンの片側', options: ['5V', 'ボタンの片側', 'ブザー VCC'], why: 'GPIO27でボタン入力を読みます。', color: '#b58cff' },
-            { from: 'ボタンの反対側', to: 'GND', options: ['GND', '3.3V', 'GPIO23'], why: '押すと入力がLOWになるようにします。', color: '#5eead4' }
+          id:'buzzer',level:'応用',time:'15分',title:'ボタン式アラーム',subtitle:'入力をきっかけに音を出し、「反応する装置」へ発展させます。',
+          goal:'ボタン入力で、3.3V信号対応のアクティブブザーモジュールを鳴らせる。',
+          parts:['3.3V信号対応ブザーモジュール × 1','タクトスイッチ × 1','ジャンパーワイヤー × 5'],
+          concept:'アクチュエーターは電気の命令を光・音・動きへ変える部品。ここではブザーが音へ変えます。',
+          safety:'大電流のブザーや5V専用品をGPIOへ直結しない。手元のモジュールのVCC・GND・SIG印字を確認します。',
+          wires:[
+            W(1,'3.3V（物理1番）','ブザー VCC',['ブザー VCC','ブザー GND','ボタン'],'モジュールへ3.3Vを供給します。','電源はモジュールのVCC端子へつなぎます。','#d94c3f'),
+            W(6,'GND（物理6番）','ブザー GND',['ブザー SIG','5V','ブザー GND'],'モジュールの電源回路を完成させます。','GNDはブザーモジュールのGND端子へつなぎます。','#2878b5'),
+            W(16,'GPIO23（物理16番）','ブザー SIG',['ブザー VCC','ブザー SIG','GND'],'GPIO23で音のON / OFFを指示します。','制御信号はSIG端子へつなぎます。','#e4962f'),
+            W(13,'GPIO27（物理13番）','ボタンの片側',['5V','ボタンの片側','ブザー VCC'],'GPIO27でボタン入力を読みます。','GPIO27はボタン入力に使います。','#7257a7'),
+            W(14,'ボタンの反対側','GND',['GND','3.3V','GPIO23'],'押すと入力がLOWになる回路です。','内部プルアップでは反対側をGNDへつなぎます。','#2878b5')
           ],
-          sim: 'buzzer', code: `from gpiozero import Buzzer, Button\nfrom signal import pause\n\nbuzzer = Buzzer(23)\nbutton = Button(27, pull_up=True)\n\nbutton.when_pressed = buzzer.on\nbutton.when_released = buzzer.off\n\npause()`,
-          notes: ['Buzzer(23) はGPIO23を音の出力に使います。', '押している間だけon、離すとoffにします。', '実際の部品がactive_high=Falseを必要とする場合は製品仕様を確認します。'],
-          setup: [], quiz: { q: '5V専用の大電流ブザーを使いたい場合は？', options: ['GPIOへそのまま直結する', 'トランジスタ等の駆動回路を使う', '抵抗を外す'], correct: 1, why: 'GPIOの電流能力を超える部品は、トランジスタ等を介して駆動します。' },
-          trouble: ['ブザーモジュールが3.3V信号に対応しているか仕様を確認する。', 'VCC・GND・SIGの順番は製品ごとに異なるため印字を確認する。', '音が逆動作する場合はactive_high設定を仕様に合わせる。']
+          sim:'buzzer',signals:[['GPIO27','HIGH'],['GPIO23','LOW'],['ブザー','停止']],
+          code:"from gpiozero import Buzzer, Button\nfrom signal import pause\n\nbuzzer = Buzzer(23)\nbutton = Button(27, pull_up=True)\n\nbutton.when_pressed = buzzer.on\nbutton.when_released = buzzer.off\n\npause()",
+          notes:['Buzzer(23) はGPIO23を音の出力に使います。','押している間だけon、離すとoffです。','逆動作する製品はactive_high設定を仕様に合わせます。'],
+          setup:[],terminal:'アラーム待機中...\nボタン LOW → GPIO23 HIGH → ブザーON\n（Ctrl + C で終了）',
+          quiz:{q:'5V専用の大電流ブザーを使いたい場合は？',options:['GPIOへ直結','トランジスタ等の駆動回路を使う','抵抗を外す'],correct:1,why:'GPIOの電流能力を超える部品は、駆動回路を介して制御します。'},
+          trouble:['ブザーモジュールが3.3V信号に対応するか仕様を確認する。','VCC・GND・SIGの順番は製品ごとに異なるため印字を確認する。','逆動作する場合はactive_high設定を仕様に合わせる。']
         },
         {
-          id: 'temperature', level: '発展', time: '約25分', title: '温度センサーを読む', subtitle: '1本のデータ線でデジタル値を受け取り、現実の温度をコードへ取り込みます。',
-          goal: 'DS18B20を1-Wireで配線し、温度を1秒ごとにPythonで読める。',
-          parts: ['DS18B20温度センサー × 1', '4.7kΩ抵抗 × 1', 'ジャンパーワイヤー × 3'],
-          concept: '<strong>1-Wire</strong>は、主に1本のデータ線でセンサーと通信する方式です。DATA線を安定させるためプルアップ抵抗を使います。',
-          safety: '<strong>向きに注意：</strong> DS18B20は平らな面を手前にした一般的な形を想定しています。製品のデータシートでVDD・DATA・GNDを必ず確認してください。',
-          wires: [
-            { from: '3.3V（物理1番）', to: 'DS18B20 VDD', options: ['DS18B20 DATA', 'DS18B20 VDD', 'DS18B20 GND'], why: 'センサーへ3.3Vを供給します。', color: '#ff6b6b' },
-            { from: 'GND（物理6番）', to: 'DS18B20 GND', options: ['DS18B20 GND', 'DS18B20 DATA', '5V'], why: 'センサーのGNDをRaspberry Piと共有します。', color: '#6ea8fe' },
-            { from: 'GPIO4（物理7番）', to: 'DS18B20 DATA', options: ['DS18B20 VDD', 'DS18B20 DATA', 'DS18B20 GND'], why: 'GPIO4を1-Wireのデータ線として使います。', color: '#ffbf47' },
-            { from: 'DATA', to: '4.7kΩ抵抗 → 3.3V', options: ['4.7kΩ抵抗 → 3.3V', '5Vへ直結', '330Ω抵抗 → GND'], why: '4.7kΩでDATA線を3.3Vへプルアップします。', color: '#b58cff' }
+          id:'temperature',level:'発展',time:'25分',title:'温度センサーを読む',subtitle:'1本のデータ線でデジタル値を受け取り、現実の温度をコードへ取り込みます。',
+          goal:'DS18B20を1-Wireで配線し、温度を1秒ごとにPythonで読める。',
+          parts:['DS18B20温度センサー × 1','4.7kΩ抵抗 × 1','ジャンパーワイヤー × 3'],
+          concept:'1-Wireは主に1本のデータ線で通信する方式。DATA線を安定させるプルアップ抵抗を使います。',
+          safety:'端子順は製品で異なる場合があります。平らな面だけで決めず、手元の製品のデータシートを確認します。',
+          wires:[
+            W(1,'3.3V（物理1番）','DS18B20 VDD',['DS18B20 DATA','DS18B20 VDD','DS18B20 GND'],'センサーへ3.3Vを供給します。','電源はVDD端子へつなぎます。','#d94c3f'),
+            W(6,'GND（物理6番）','DS18B20 GND',['DS18B20 GND','DS18B20 DATA','5V'],'センサーとRaspberry PiでGNDを共有します。','GND端子同士を接続します。','#2878b5'),
+            W(7,'GPIO4（物理7番）','DS18B20 DATA',['DS18B20 VDD','DS18B20 DATA','DS18B20 GND'],'GPIO4を1-Wireのデータ線に使います。','通信線はDATA端子へ接続します。','#e4962f'),
+            W(null,'DATA','4.7kΩ抵抗 → 3.3V',['4.7kΩ抵抗 → 3.3V','5Vへ直結','330Ω抵抗 → GND'],'DATA線を4.7kΩで3.3Vへプルアップします。','1-WireのDATA線は4.7kΩ抵抗で3.3Vへプルアップします。','#7257a7')
           ],
-          sim: 'temperature', code: `from w1thermsensor import W1ThermSensor\nfrom time import sleep\n\nsensor = W1ThermSensor()\n\nwhile True:\n    temperature = sensor.get_temperature()\n    print(f"{temperature:.1f} ℃")\n    sleep(1)`,
-          notes: ['W1ThermSensorが接続済みのセンサーを見つけます。', 'get_temperature() は摂氏の数値を返します。', ':.1f で小数第1位まで表示します。'],
-          setup: ['sudo raspi-config  # Interface Options → 1-Wire を有効化', 'sudo apt update && sudo apt install -y python3-w1thermsensor'], quiz: { q: 'DATAと3.3Vの間に4.7kΩ抵抗を入れる理由は？', options: ['DATA線を安定してHIGHへ保つため', '温度を下げるため', '5Vへ変換するため'], correct: 0, why: '1-WireのDATA線を安定させるプルアップ抵抗です。' },
-          trouble: ['raspi-configで1-Wireを有効化し、再起動したか確認する。', '平らな面を基準にした端子順が手元の製品と一致するか確認する。', '/sys/bus/w1/devices/ に28-から始まるセンサーが見えるか確認する。']
+          sim:'temperature',signals:[['GPIO4','1-Wire'],['センサー','接続済み'],['温度','23.0 ℃']],
+          code:"from w1thermsensor import W1ThermSensor\nfrom time import sleep\n\nsensor = W1ThermSensor()\n\nwhile True:\n    temperature = sensor.get_temperature()\n    print(f\"{temperature:.1f} ℃\")\n    sleep(1)",
+          notes:['W1ThermSensorが接続済みのセンサーを見つけます。','get_temperature() は摂氏の数値を返します。',':.1f で小数第1位まで表示します。'],
+          setup:['sudo raspi-config  # Interface Options → 1-Wire を有効化','sudo apt update && sudo apt install -y python3-w1thermsensor'],
+          terminal:'センサーを検出しました\n23.0 ℃\n23.1 ℃\n（Ctrl + C で終了）',
+          quiz:{q:'DATAと3.3Vの間に4.7kΩ抵抗を入れる理由は？',options:['DATA線を安定してHIGHへ保つ','温度を下げる','5Vへ変換する'],correct:0,why:'1-WireのDATA線を安定させるプルアップ抵抗です。'},
+          trouble:['raspi-configで1-Wireを有効化し、再起動したか確認する。','端子順が手元の製品のデータシートと一致するか確認する。','/sys/bus/w1/devices/ に28-から始まるセンサーが見えるか確認する。']
         }
       ];
-
-      const $ = (id) => document.getElementById(id);
-      const storageKey = 'raspberry-pi-electronics-simulator-v2';
-      let saved = {};
-      try { saved = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch (_) { saved = {}; }
-      const state = { lesson: Math.min(Number(saved.lastLesson) || 0, lessons.length - 1), wire: 0, feedback: '', feedbackType: '', completed: new Set(saved.completed || []), trafficTimer: null };
-
-      function persist() {
-        localStorage.setItem(storageKey, JSON.stringify({ lastLesson: state.lesson, completed: [...state.completed] }));
-      }
+      const $=id=>document.getElementById(id);
+      const storageKey='raspberry-pi-electronics-simulator-v3';
+      let saved={};
+      try { saved=JSON.parse(localStorage.getItem(storageKey)||'{}'); } catch (_) {}
+      const state={
+        lesson:Math.min(Number(saved.lastLesson)||0,lessons.length-1),
+        stage:['wire','simulate','real'].includes(saved.stage)?saved.stage:'wire',
+        wiring:saved.wiring&&typeof saved.wiring==='object'?saved.wiring:{},
+        completed:new Set(Array.isArray(saved.completed)?saved.completed:[]),
+        quizPassed:new Set(Array.isArray(saved.quizPassed)?saved.quizPassed:[]),
+        feedback:'',feedbackType:'',trafficTimer:null
+      };
 
       function escapeHtml(value) {
-        return String(value).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[c]);
+        return String(value).replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+      }
+      function currentLesson(){ return lessons[state.lesson]; }
+      function wireStep(){ const item=currentLesson(); return Math.min(Number(state.wiring[item.id])||0,item.wires.length); }
+      function isWired(){ return wireStep()>=currentLesson().wires.length; }
+      function persist(){
+        localStorage.setItem(storageKey,JSON.stringify({
+          lastLesson:state.lesson,stage:state.stage,wiring:state.wiring,
+          completed:[...state.completed],quizPassed:[...state.quizPassed]
+        }));
       }
 
-      function renderLessonList() {
-        $('lessonList').innerHTML = lessons.map((lesson, index) => `
-          <button class="lesson-button ${index === state.lesson ? 'active' : ''} ${state.completed.has(lesson.id) ? 'done' : ''}" data-lesson="${index}" ${index === state.lesson ? 'aria-current="step"' : ''}>
-            <span class="lesson-number">${state.completed.has(lesson.id) ? '✓' : index + 1}</span>
-            <span><span class="lesson-name">${escapeHtml(lesson.title)}</span><span class="lesson-kind">${lesson.level}</span></span>
-            <span class="done-mark">${state.completed.has(lesson.id) ? '完了' : ''}</span>
-          </button>`).join('');
-        document.querySelectorAll('[data-lesson]').forEach(button => button.addEventListener('click', () => selectLesson(Number(button.dataset.lesson))));
-      }
-
-      function updateProgress() {
-        const count = state.completed.size;
-        $('progressFill').style.width = `${count / lessons.length * 100}%`;
-        $('progressLabel').textContent = `${count} / ${lessons.length} 完了`;
-      }
-
-      function circuitSvg(lesson) {
-        const count = lesson.wires.length;
-        const startY = count > 4 ? 104 : 120;
-        const gap = count > 4 ? 43 : 56;
-        const wires = lesson.wires.map((wire, i) => {
-          const y = startY + i * gap;
-          const visible = i < state.wire;
-          return `<g opacity="${visible ? 1 : .18}">
-            <path d="M 264 ${y} C 380 ${y}, 455 ${y + (i % 2 ? 12 : -12)}, 598 ${y}" fill="none" stroke="${visible ? wire.color : '#67717f'}" stroke-width="${visible ? 6 : 2}" stroke-linecap="round" ${visible ? '' : 'stroke-dasharray="7 9"'}/>
-            <circle cx="264" cy="${y}" r="6" fill="${visible ? wire.color : '#67717f'}"/>
-            <circle cx="598" cy="${y}" r="6" fill="${visible ? wire.color : '#67717f'}"/>
-            <text x="252" y="${y - 11}" text-anchor="end" fill="#d7dde6" font-size="12" font-weight="700">${escapeHtml(wire.from)}</text>
-            <text x="610" y="${y - 11}" fill="#d7dde6" font-size="12" font-weight="700">${escapeHtml(wire.to)}</text>
-          </g>`;
+      function renderLessonList(){
+        $('lessonList').innerHTML=lessons.map((item,index)=>{
+          const done=state.completed.has(item.id);
+          return '<button class="lesson-button '+(index===state.lesson?'active ':'')+(done?'done':'')+'" data-lesson="'+index+'" '+(index===state.lesson?'aria-current="step"':'')+'>'+
+            '<span class="lesson-number">'+(done?'✓':String(index+1).padStart(2,'0'))+'</span>'+
+            '<span><span class="lesson-name">'+escapeHtml(item.title)+'</span><span class="lesson-kind">'+escapeHtml(item.level)+'・'+escapeHtml(item.time)+'</span></span>'+
+            '<span class="done-word">'+(done?'完了':'')+'</span></button>';
         }).join('');
-        const complete = state.wire === count;
-        return `<div class="stage-badge">機能を理解するための簡略回路図</div>
-          <svg viewBox="0 0 880 400" role="img" aria-label="${escapeHtml(lesson.title)}の配線図">
-            <defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
-            <rect x="22" y="54" width="244" height="310" rx="24" fill="#173d2b" stroke="#377a59"/>
-            <circle cx="66" cy="89" r="14" fill="#7ee787" opacity=".8"/><text x="90" y="96" fill="#eef7f1" font-size="18" font-weight="800">Raspberry Pi</text>
-            <text x="52" y="340" fill="#8fb29d" font-size="11">40-pin GPIO</text>
-            <rect x="598" y="54" width="260" height="310" rx="24" fill="#e8e9e7" stroke="#fff"/>
-            <text x="628" y="92" fill="#1d242b" font-size="18" font-weight="800">ブレッドボード / 部品</text>
-            <path d="M630 112H826" stroke="#c7cac8" stroke-width="2" stroke-dasharray="4 7"/>
-            ${wires}
-            ${complete ? '<g filter="url(#glow)"><circle cx="826" cy="330" r="9" fill="#7ee787"/><text x="807" y="335" text-anchor="end" fill="#256438" font-size="13" font-weight="800">配線完成</text></g>' : ''}
-          </svg>`;
+        document.querySelectorAll('[data-lesson]').forEach(button=>button.addEventListener('click',()=>selectLesson(Number(button.dataset.lesson))));
+      }
+      function updateProgress(){
+        const count=state.completed.size;
+        $('progressFill').style.width=(count/lessons.length*100)+'%';
+        $('progressLabel').textContent=count+' / '+lessons.length+' 完了';
       }
 
-      function renderWiring() {
-        const lesson = lessons[state.lesson];
-        const complete = state.wire >= lesson.wires.length;
-        $('circuitStage').innerHTML = circuitSvg(lesson);
-        $('wireCount').textContent = `${state.wire} / ${lesson.wires.length}`;
-        $('feedback').className = `feedback ${state.feedbackType}`;
-        $('feedback').textContent = state.feedback;
-        if (complete) {
-          $('stepCount').textContent = 'WIRING COMPLETE';
-          $('wiringQuestion').textContent = '配線が完成しました。下のシミュレーションで動きを確かめましょう。';
-          $('choices').innerHTML = '';
+      function renderPinout(){
+        const item=currentLesson();
+        const used=new Set(item.wires.map(wire=>wire.pin).filter(Boolean));
+        const connected=new Set(item.wires.slice(0,wireStep()).map(wire=>wire.pin).filter(Boolean));
+        $('pinHeader').innerHTML=Array.from({length:40},(_,index)=>{
+          const number=index+1;
+          const label=pinLabels[number];
+          const classes=['pin',number%2?'odd':'even',used.has(number)?'used':'',connected.has(number)?'connected':'',label==='GND'?'ground':'',(label==='5V'||label==='3V3')?'power':''].filter(Boolean).join(' ');
+          return '<div class="'+classes+'" title="物理'+number+'番 / '+label+'"><span class="pin-physical">'+number+'</span><span class="pin-dot"></span><span class="pin-label">'+label+'</span></div>';
+        }).join('');
+      }
+      function renderConnections(){
+        const step=wireStep();
+        $('connectionList').innerHTML=currentLesson().wires.map((wire,index)=>{
+          const done=index<step;
+          return '<div class="connection '+(done?'done':'pending')+'" style="color:'+(done?wire.color:'#aaa99f')+'"><span class="wire-swatch"></span><div>'+
+            '<div class="connection-route">'+(done?escapeHtml(wire.from)+' → '+escapeHtml(wire.to):(index+1)+'. 未接続')+'</div>'+
+            '<div class="connection-reason">'+(done?escapeHtml(wire.why):'正しい接続先を選ぶと表示されます')+'</div></div></div>';
+        }).join('');
+      }
+      function renderWiring(){
+        const item=currentLesson();
+        const step=wireStep();
+        const complete=isWired();
+        renderPinout(); renderConnections();
+        $('wireCount').textContent=step+' / '+item.wires.length;
+        $('wireTabCheck').textContent=complete?'✓':'';
+        $('feedback').className='feedback '+state.feedbackType;
+        $('feedback').textContent=state.feedback;
+        $('trySimulation').hidden=!complete;
+        if(complete){
+          $('wirePrompt').innerHTML='<div class="complete-panel"><strong>配線完成</strong><span>端子と部品のつながりを確認できました。</span></div>';
         } else {
-          const wire = lesson.wires[state.wire];
-          $('stepCount').textContent = `STEP ${state.wire + 1} / ${lesson.wires.length}`;
-          $('wiringQuestion').textContent = `「${wire.from}」は、次にどこへつなぐ？`;
-          $('choices').innerHTML = wire.options.map((option, index) => `<button class="choice" data-choice="${index}">${escapeHtml(option)}</button>`).join('');
-          document.querySelectorAll('[data-choice]').forEach(button => button.addEventListener('click', () => chooseWire(Number(button.dataset.choice))));
+          const wire=item.wires[step];
+          $('wirePrompt').innerHTML='<div class="question-step">CONNECTION '+(step+1)+' / '+item.wires.length+'</div>'+
+            '<p class="question">「'+escapeHtml(wire.from)+'」は、どこへつなぐ？</p>'+
+            '<div class="choices">'+wire.options.map((option,index)=>'<button class="choice" data-choice="'+index+'">'+escapeHtml(option)+'</button>').join('')+'</div>';
+          document.querySelectorAll('[data-choice]').forEach(button=>button.addEventListener('click',()=>chooseWire(Number(button.dataset.choice))));
         }
-        renderSimulator();
       }
-
-      function chooseWire(index) {
-        const lesson = lessons[state.lesson];
-        const wire = lesson.wires[state.wire];
-        if (wire.options[index] === wire.to) {
-          state.wire += 1;
-          state.feedback = `正解。${wire.why}`;
-          state.feedbackType = 'good';
+      function chooseWire(index){
+        const item=currentLesson();
+        const step=wireStep();
+        const wire=item.wires[step];
+        if(!wire) return;
+        if(wire.options[index]===wire.to){
+          state.wiring[item.id]=step+1;
+          state.feedback='正解。 '+wire.why;
+          state.feedbackType='good';
+          if(state.quizPassed.has(item.id)&&state.wiring[item.id]>=item.wires.length) state.completed.add(item.id);
+          persist();
         } else {
-          state.feedback = 'そこでは回路が成立しません。端子の役割をもう一度見てみましょう。';
-          state.feedbackType = 'bad';
+          state.feedback='違います。 '+wire.wrong;
+          state.feedbackType='bad';
         }
-        renderWiring();
+        renderWiring(); renderSimulator(); renderLessonList(); updateProgress();
       }
 
-      function renderSimulator() {
-        clearInterval(state.trafficTimer);
-        state.trafficTimer = null;
-        const lesson = lessons[state.lesson];
-        const unlocked = state.wire >= lesson.wires.length;
-        let body = '';
-        if (lesson.sim === 'led') body = `<div class="sim-device"><div class="lamp" id="lamp"></div><button class="action" id="simButton">LEDを点灯</button><div class="sim-readout" id="readout">GPIO17 = LOW</div></div>`;
-        if (lesson.sim === 'button') body = `<div class="sim-device"><button class="action" id="holdButton">押している間だけ入力</button><div class="sim-readout" id="readout">GPIO27 = HIGH（離れている）</div></div>`;
-        if (lesson.sim === 'button-led') body = `<div class="sim-device"><div class="lamp" id="lamp"></div><button class="action" id="holdButton">ボタンを押し続ける</button><div class="sim-readout" id="readout">入力 HIGH → LED OFF</div></div>`;
-        if (lesson.sim === 'pwm') body = `<div class="sim-device"><div class="lamp on" id="lamp"></div><input id="pwmRange" type="range" min="0" max="100" value="35" aria-label="LEDの明るさ"><div class="sim-readout" id="readout">led.value = 0.35</div></div>`;
-        if (lesson.sim === 'traffic') body = `<div class="sim-device"><div class="traffic"><div class="lamp red" id="redLamp"></div><div class="lamp amber" id="amberLamp"></div><div class="lamp green on" id="greenLamp"></div></div><button class="action" id="simButton">信号を開始</button><div class="sim-readout" id="readout">緑：進む</div></div>`;
-        if (lesson.sim === 'buzzer') body = `<div class="sim-device"><div style="font-size:52px" id="speaker">◖)))</div><button class="action" id="simButton">アラームを鳴らす</button><div class="sim-readout" id="readout">GPIO23 = LOW</div></div>`;
-        if (lesson.sim === 'temperature') body = `<div class="sim-device"><div style="font-size:48px">🌡</div><input id="tempRange" type="range" min="-10" max="50" value="23" aria-label="周囲の温度"><div class="sim-readout" id="readout">sensor = 23.0 ℃</div></div>`;
-        $('simulator').innerHTML = body + (unlocked ? '' : '<div class="sim-lock">先に配線チャレンジを完成させると操作できます。</div>');
-        if (!unlocked) return;
+      function renderSignals(values){
+        const source=values||currentLesson().signals;
+        $('signalList').innerHTML=source.map(pair=>'<li class="signal-item"><span>'+escapeHtml(pair[0])+'</span><span class="signal-value">'+escapeHtml(pair[1])+'</span></li>').join('');
+      }
+      function renderSimulator(){
+        clearInterval(state.trafficTimer); state.trafficTimer=null;
+        const item=currentLesson();
+        let body='';
+        if(item.sim==='led') body='<div class="sim-device"><div class="lamp" id="lamp"></div><button class="instrument-button" id="simButton">LEDを点灯</button><div class="readout" id="readout">GPIO17 = LOW</div></div>';
+        if(item.sim==='button') body='<div class="sim-device"><button class="instrument-button" id="holdButton">押している間だけ入力</button><div class="readout" id="readout">GPIO27 = HIGH（離れている）</div></div>';
+        if(item.sim==='button-led') body='<div class="sim-device"><div class="lamp" id="lamp"></div><button class="instrument-button" id="holdButton">ボタンを押し続ける</button><div class="readout" id="readout">入力 HIGH → LED OFF</div></div>';
+        if(item.sim==='pwm') body='<div class="sim-device"><div class="lamp on" id="lamp"></div><input id="pwmRange" type="range" min="0" max="100" value="35" aria-label="LEDの明るさ"><div class="readout" id="readout">led.value = 0.35</div></div>';
+        if(item.sim==='traffic') body='<div class="sim-device"><div class="traffic"><div class="lamp red" id="redLamp"></div><div class="lamp amber" id="amberLamp"></div><div class="lamp green on" id="greenLamp"></div></div><button class="instrument-button" id="simButton">信号を開始</button><div class="readout" id="readout">緑：進む</div></div>';
+        if(item.sim==='buzzer') body='<div class="sim-device"><div id="speaker" style="font-size:52px">◖ )))</div><button class="instrument-button" id="simButton">アラームを鳴らす</button><div class="readout" id="readout">GPIO23 = LOW</div></div>';
+        if(item.sim==='temperature') body='<div class="sim-device"><div id="tempDisplay" style="font-size:48px">23.0°</div><input id="tempRange" type="range" min="-10" max="50" value="23" aria-label="周囲の温度"><div class="readout" id="readout">sensor = 23.0 ℃</div></div>';
+        $('instrument').innerHTML=body+(isWired()?'':'<div class="sim-lock">先に「配線する」を完成させると、この実験装置を操作できます。</div>');
+        renderSignals();
+        if(!isWired()) return;
 
-        if (lesson.sim === 'led') {
-          let on = false;
-          $('simButton').onclick = () => { on = !on; $('lamp').classList.toggle('on', on); $('simButton').textContent = on ? 'LEDを消灯' : 'LEDを点灯'; $('readout').textContent = `GPIO17 = ${on ? 'HIGH' : 'LOW'}`; };
-        }
-        if (lesson.sim === 'button' || lesson.sim === 'button-led') {
-          const setPressed = (pressed) => {
-            if (lesson.sim === 'button-led') $('lamp').classList.toggle('on', pressed);
-            $('readout').textContent = lesson.sim === 'button' ? `GPIO27 = ${pressed ? 'LOW（押された）' : 'HIGH（離れている）'}` : `入力 ${pressed ? 'LOW → LED ON' : 'HIGH → LED OFF'}`;
-          };
-          ['pointerdown', 'keydown'].forEach(event => $('holdButton').addEventListener(event, e => { if (event === 'pointerdown' || e.key === ' ' || e.key === 'Enter') setPressed(true); }));
-          ['pointerup', 'pointerleave', 'keyup'].forEach(event => $('holdButton').addEventListener(event, () => setPressed(false)));
-        }
-        if (lesson.sim === 'pwm') {
-          const update = () => { const value = Number($('pwmRange').value); $('lamp').style.opacity = .18 + value / 122; $('lamp').style.boxShadow = `0 0 ${Math.round(value / 2)}px #ffe46b`; $('readout').textContent = `led.value = ${(value / 100).toFixed(2)}`; };
-          $('pwmRange').oninput = update; update();
-        }
-        if (lesson.sim === 'traffic') {
-          let running = false;
-          let index = 0;
-          const stages = [ ['greenLamp', '緑：進む'], ['amberLamp', '黄：止まる準備'], ['redLamp', '赤：止まる'] ];
-          const show = () => { ['redLamp', 'amberLamp', 'greenLamp'].forEach(id => $(id).classList.remove('on')); $(stages[index][0]).classList.add('on'); $('readout').textContent = stages[index][1]; index = (index + 1) % stages.length; };
-          $('simButton').onclick = () => { running = !running; $('simButton').textContent = running ? '信号を停止' : '信号を開始'; clearInterval(state.trafficTimer); if (running) { show(); state.trafficTimer = setInterval(show, 1400); } };
-        }
-        if (lesson.sim === 'buzzer') {
-          $('simButton').onclick = () => {
-            $('readout').textContent = 'GPIO23 = HIGH（音）'; $('speaker').style.color = '#ffca6a';
-            try { const AudioCtx = window.AudioContext || window.webkitAudioContext; const ctx = new AudioCtx(); const oscillator = ctx.createOscillator(); const gain = ctx.createGain(); oscillator.frequency.value = 740; gain.gain.value = .04; oscillator.connect(gain).connect(ctx.destination); oscillator.start(); oscillator.stop(ctx.currentTime + .22); } catch (_) {}
-            setTimeout(() => { if ($('readout')) $('readout').textContent = 'GPIO23 = LOW'; if ($('speaker')) $('speaker').style.color = ''; }, 260);
+        if(item.sim==='led'){
+          let on=false;
+          $('simButton').onclick=()=>{
+            on=!on; $('lamp').classList.toggle('on',on); $('simButton').textContent=on?'LEDを消灯':'LEDを点灯';
+            $('readout').textContent='GPIO17 = '+(on?'HIGH':'LOW');
+            renderSignals([['GPIO17',on?'HIGH':'LOW'],['LED',on?'点灯':'消灯'],['電流',on?'流れている':'流れていない']]);
           };
         }
-        if (lesson.sim === 'temperature') {
-          const update = () => $('readout').textContent = `sensor = ${Number($('tempRange').value).toFixed(1)} ℃`;
-          $('tempRange').oninput = update; update();
+        if(item.sim==='button'||item.sim==='button-led'){
+          const setPressed=pressed=>{
+            if(item.sim==='button-led') $('lamp').classList.toggle('on',pressed);
+            $('readout').textContent=item.sim==='button'?'GPIO27 = '+(pressed?'LOW（押された）':'HIGH（離れている）'):'入力 '+(pressed?'LOW → LED ON':'HIGH → LED OFF');
+            renderSignals(item.sim==='button'
+              ?[['GPIO27',pressed?'LOW':'HIGH'],['ボタン',pressed?'押されている':'離れている'],['入力',pressed?'0':'1']]
+              :[['GPIO27',pressed?'LOW':'HIGH'],['GPIO17',pressed?'HIGH':'LOW'],['LED',pressed?'点灯':'消灯']]);
+          };
+          ['pointerdown','keydown'].forEach(event=>$('holdButton').addEventListener(event,e=>{if(event==='pointerdown'||e.key===' '||e.key==='Enter')setPressed(true);}));
+          ['pointerup','pointerleave','keyup','pointercancel'].forEach(event=>$('holdButton').addEventListener(event,()=>setPressed(false)));
+        }
+        if(item.sim==='pwm'){
+          const update=()=>{
+            const value=Number($('pwmRange').value);
+            $('lamp').style.opacity=.18+value/122; $('lamp').style.boxShadow='0 0 '+Math.round(value/2)+'px #ffe36d';
+            $('readout').textContent='led.value = '+(value/100).toFixed(2);
+            renderSignals([['GPIO18','PWM'],['duty',value+'%'],['LED','明るさ'+value+'%']]);
+          };
+          $('pwmRange').oninput=update; update();
+        }
+        if(item.sim==='traffic'){
+          let running=false,index=0;
+          const stages=[
+            ['greenLamp','緑：進む',[['GPIO17 / 赤','LOW'],['GPIO27 / 黄','LOW'],['GPIO22 / 緑','HIGH']]],
+            ['amberLamp','黄：止まる準備',[['GPIO17 / 赤','LOW'],['GPIO27 / 黄','HIGH'],['GPIO22 / 緑','LOW']]],
+            ['redLamp','赤：止まる',[['GPIO17 / 赤','HIGH'],['GPIO27 / 黄','LOW'],['GPIO22 / 緑','LOW']]]
+          ];
+          const show=()=>{
+            ['redLamp','amberLamp','greenLamp'].forEach(id=>$(id).classList.remove('on'));
+            $(stages[index][0]).classList.add('on'); $('readout').textContent=stages[index][1]; renderSignals(stages[index][2]); index=(index+1)%stages.length;
+          };
+          $('simButton').onclick=()=>{
+            running=!running; $('simButton').textContent=running?'信号を停止':'信号を開始'; clearInterval(state.trafficTimer);
+            if(running){show();state.trafficTimer=setInterval(show,1400);}
+          };
+        }
+        if(item.sim==='buzzer'){
+          $('simButton').onclick=()=>{
+            $('readout').textContent='GPIO23 = HIGH（音）'; $('speaker').style.color='#f5c84c';
+            renderSignals([['GPIO27','LOW'],['GPIO23','HIGH'],['ブザー','鳴っている']]);
+            try {
+              const AudioCtx=window.AudioContext||window.webkitAudioContext;
+              const ctx=new AudioCtx(),oscillator=ctx.createOscillator(),gain=ctx.createGain();
+              oscillator.frequency.value=740; gain.gain.value=.035; oscillator.connect(gain).connect(ctx.destination); oscillator.start(); oscillator.stop(ctx.currentTime+.22);
+            } catch (_) {}
+            setTimeout(()=>{
+              if($('readout')) $('readout').textContent='GPIO23 = LOW';
+              if($('speaker')) $('speaker').style.color='';
+              if(currentLesson().id==='buzzer') renderSignals([['GPIO27','HIGH'],['GPIO23','LOW'],['ブザー','停止']]);
+            },280);
+          };
+        }
+        if(item.sim==='temperature'){
+          const update=()=>{
+            const value=Number($('tempRange').value).toFixed(1);
+            $('readout').textContent='sensor = '+value+' ℃'; $('tempDisplay').textContent=value+'°';
+            renderSignals([['GPIO4','1-Wire'],['センサー','接続済み'],['温度',value+' ℃']]);
+          };
+          $('tempRange').oninput=update; update();
         }
       }
 
-      function renderQuiz() {
-        const lesson = lessons[state.lesson];
-        const done = state.completed.has(lesson.id);
-        $('quiz').innerHTML = `<div class="eyebrow">CHECK</div><h3>${done ? '理解チェック完了 ✓' : '最後に1問'}</h3><p>${escapeHtml(lesson.quiz.q)}</p><div class="quiz-options">${lesson.quiz.options.map((option, i) => `<button class="quiz-option" data-answer="${i}">${escapeHtml(option)}</button>`).join('')}</div><div class="quiz-result ${done ? 'good' : ''}" id="quizResult">${done ? 'このレッスンは完了済みです。何度でも復習できます。' : ''}</div>`;
-        document.querySelectorAll('[data-answer]').forEach(button => button.addEventListener('click', () => answerQuiz(Number(button.dataset.answer))));
+      function renderQuiz(){
+        const item=currentLesson(),passed=state.quizPassed.has(item.id);
+        $('quiz').innerHTML='<p class="section-kicker">ONE QUESTION</p><h3>'+(passed?'理解チェック済み ✓':'理解チェック')+'</h3>'+
+          '<p class="quiz-question">'+escapeHtml(item.quiz.q)+'</p><div class="quiz-options">'+
+          item.quiz.options.map((option,index)=>'<button class="quiz-option" data-answer="'+index+'">'+escapeHtml(option)+'</button>').join('')+
+          '</div><div class="quiz-result '+(passed?'good':'')+'" id="quizResult">'+(passed?'正解済みです。何度でも復習できます。':'')+'</div>';
+        document.querySelectorAll('[data-answer]').forEach(button=>button.addEventListener('click',()=>answerQuiz(Number(button.dataset.answer))));
       }
-
-      function answerQuiz(index) {
-        const lesson = lessons[state.lesson];
-        const result = $('quizResult');
-        if (index === lesson.quiz.correct) {
-          state.completed.add(lesson.id); persist();
-          result.className = 'quiz-result good'; result.textContent = `正解。${lesson.quiz.why} レッスン完了です。`;
+      function answerQuiz(index){
+        const item=currentLesson(),result=$('quizResult');
+        if(index===item.quiz.correct){
+          state.quizPassed.add(item.id);
+          if(isWired()) state.completed.add(item.id);
+          persist(); result.className='quiz-result good';
+          result.textContent='正解。 '+item.quiz.why+(isWired()?' レッスン完了です。':' 配線も完成するとレッスン完了です。');
           renderLessonList(); updateProgress();
         } else {
-          result.className = 'quiz-result bad'; result.textContent = 'もう一度。上の「先に知ること」や配線を見返してみましょう。';
+          result.className='quiz-result bad';
+          result.textContent='もう一度。上の信号表示か「先に知ること」を見返してみましょう。';
         }
       }
 
-      function renderDetails() {
-        const lesson = lessons[state.lesson];
-        $('code').textContent = lesson.code;
-        $('codeNotes').innerHTML = lesson.notes.map(note => `<li>${escapeHtml(note)}</li>`).join('');
-        const setup = lesson.setup.length ? `<p class="concept">最初の1回だけ設定します。</p>${lesson.setup.map(command => `<code class="command">${escapeHtml(command)}</code>`).join('')}` : '';
-        $('realSteps').innerHTML = `${setup}<ol class="real-list"><li>Raspberry Piの電源を切ってから、完成した回路どおりに配線する。</li><li>電源を入れ、ターミナルで <code>nano lesson.py</code> を開いてコードを貼る。</li><li><code>Ctrl + O</code> → Enterで保存し、<code>Ctrl + X</code>で閉じる。</li><li><code class="command">python3 lesson.py</code> を実行する。終了は <code>Ctrl + C</code>。</li></ol>`;
-        $('troubleshooting').innerHTML = lesson.trouble.map(item => `<li>${escapeHtml(item)}</li>`).join('');
+      function renderReal(){
+        const item=currentLesson();
+        $('code').textContent=item.code;
+        $('codeNotes').innerHTML=item.notes.map(note=>'<li>'+escapeHtml(note)+'</li>').join('');
+        $('terminal').textContent='pi@raspberrypi:~ $ ';
+        $('terminalInput').value='';
+        $('setupCommands').innerHTML=item.setup.length
+          ?'<h3>このレッスンだけの事前設定</h3>'+item.setup.map(command=>'<code class="command">'+escapeHtml(command)+'</code>').join('')
+          :'<h3>事前設定</h3><span class="bench-note">Raspberry Pi OSではGPIO Zeroを利用できます。</span>';
+        $('realSteps').innerHTML='<ol><li>Raspberry Piをシャットダウンし、電源ケーブルを抜く。</li><li>「配線する」の40ピン表示と接続リストどおりに配線する。</li><li>電源を入れ、ターミナルで <code>nano lesson.py</code> を開いてコードを貼る。</li><li><code>Ctrl + O</code> → Enterで保存し、<code>Ctrl + X</code>で閉じる。</li><li><code>python3 lesson.py</code> を実行する。終了は <code>Ctrl + C</code>。</li></ol>';
+        $('troubleshooting').innerHTML=item.trouble.map(text=>'<li>'+escapeHtml(text)+'</li>').join('');
+      }
+      function runTerminal(){
+        const value=$('terminalInput').value.trim().replace(/^\$\s*/,'');
+        if(value==='python3 lesson.py') $('terminal').textContent='pi@raspberrypi:~ $ python3 lesson.py\n'+currentLesson().terminal;
+        else if(!value) $('terminal').textContent='pi@raspberrypi:~ $ \nコマンドを入力してください。';
+        else $('terminal').textContent='pi@raspberrypi:~ $ '+value+'\nbash: コマンドを確認してください。ヒントは「python3 で lesson.py を開く」です。';
       }
 
-      function renderLesson() {
-        const lesson = lessons[state.lesson];
-        $('lessonMeta').innerHTML = `<span class="chip">Lesson ${state.lesson + 1}</span><span class="chip">${lesson.level}</span><span class="chip">${lesson.time}</span>`;
-        $('lessonTitle').textContent = lesson.title;
-        $('lessonSubtitle').textContent = lesson.subtitle;
-        $('lessonGoal').textContent = lesson.goal;
-        $('parts').innerHTML = lesson.parts.map(part => `<li class="part">${escapeHtml(part)}</li>`).join('');
-        $('partsCount').textContent = `${lesson.parts.length}種類`;
-        $('concept').innerHTML = lesson.concept;
-        $('safetyNote').innerHTML = lesson.safety;
-        $('prevLesson').disabled = state.lesson === 0;
-        $('nextLesson').disabled = state.lesson === lessons.length - 1;
-        renderLessonList(); renderWiring(); renderQuiz(); renderDetails(); updateProgress();
+      function setStage(stage,scroll){
+        state.stage=stage; persist();
+        document.querySelectorAll('[data-stage-tab]').forEach(button=>{
+          const active=button.dataset.stageTab===stage; button.classList.toggle('active',active); button.setAttribute('aria-selected',String(active));
+        });
+        document.querySelectorAll('[data-stage]').forEach(section=>section.classList.toggle('active',section.dataset.stage===stage));
+        if(stage==='simulate'){renderSimulator();renderQuiz();}
+        if(stage==='real')renderReal();
+        if(scroll)document.querySelector('.process-nav').scrollIntoView({behavior:'smooth',block:'start'});
       }
-
-      function selectLesson(index) {
+      function renderLesson(){
+        const item=currentLesson();
+        $('lessonLabels').innerHTML='<span class="label">LESSON '+String(state.lesson+1).padStart(2,'0')+'</span><span class="label">'+escapeHtml(item.level)+'</span><span class="label">約'+escapeHtml(item.time)+'</span>';
+        $('lessonTitle').textContent=item.title; $('lessonSubtitle').textContent=item.subtitle; $('lessonGoal').textContent=item.goal;
+        $('parts').innerHTML=item.parts.map(part=>'<li>'+escapeHtml(part)+'</li>').join('');
+        $('concept').textContent=item.concept; $('safety').textContent=item.safety;
+        $('prevLesson').disabled=state.lesson===0; $('nextLesson').disabled=state.lesson===lessons.length-1;
+        state.feedback=''; state.feedbackType='';
+        renderLessonList(); renderWiring(); renderSimulator(); renderQuiz(); renderReal(); updateProgress(); setStage(state.stage,false);
+      }
+      function selectLesson(index){
         clearInterval(state.trafficTimer);
-        state.lesson = Math.max(0, Math.min(index, lessons.length - 1));
-        state.wire = 0; state.feedback = ''; state.feedbackType = '';
-        persist(); renderLesson();
-        if (window.matchMedia('(max-width: 880px)').matches) $('lessonTop').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        state.lesson=Math.max(0,Math.min(index,lessons.length-1)); state.stage='wire'; persist(); renderLesson();
+        if(window.matchMedia('(max-width:980px)').matches)$('lessonTop').scrollIntoView({behavior:'smooth',block:'start'});
       }
 
-      $('resetWiring').addEventListener('click', () => { state.wire = 0; state.feedback = '配線をリセットしました。'; state.feedbackType = ''; renderWiring(); });
-      $('prevLesson').addEventListener('click', () => selectLesson(state.lesson - 1));
-      $('nextLesson').addEventListener('click', () => selectLesson(state.lesson + 1));
-      $('copyCode').addEventListener('click', async () => {
-        try { await navigator.clipboard.writeText(lessons[state.lesson].code); $('copyCode').textContent = 'コピー済み'; setTimeout(() => $('copyCode').textContent = 'コピー', 1300); }
-        catch (_) { $('copyCode').textContent = '選択してコピー'; }
+      document.querySelectorAll('[data-stage-tab]').forEach(button=>button.addEventListener('click',()=>setStage(button.dataset.stageTab,true)));
+      $('resetWiring').addEventListener('click',()=>{
+        const item=currentLesson(); state.wiring[item.id]=0; state.completed.delete(item.id);
+        state.feedback='配線をリセットしました。'; state.feedbackType=''; persist();
+        renderWiring(); renderSimulator(); renderLessonList(); updateProgress();
       });
-
+      $('trySimulation').addEventListener('click',()=>setStage('simulate',true));
+      $('prevLesson').addEventListener('click',()=>selectLesson(state.lesson-1));
+      $('nextLesson').addEventListener('click',()=>selectLesson(state.lesson+1));
+      $('copyCode').addEventListener('click',async()=>{
+        try {
+          await navigator.clipboard.writeText(currentLesson().code); $('copyCode').textContent='コピーしました';
+          setTimeout(()=>{if($('copyCode'))$('copyCode').textContent='コードをコピー';},1300);
+        } catch (_) { $('copyCode').textContent='選択してコピー'; }
+      });
+      $('terminalRun').addEventListener('click',runTerminal);
+      $('terminalInput').addEventListener('keydown',event=>{if(event.key==='Enter')runTerminal();});
+      $('terminalHint').addEventListener('click',()=>{$('terminalInput').value='python3 lesson.py';$('terminalInput').focus();});
       renderLesson();
     })();
   </script>
