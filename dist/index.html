@@ -1,0 +1,9 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="theme-color" content="#fafbf9"><title>Pi Lab — Raspberry Pi 学習ワークスペース</title><meta name="description" content="配線して、コードを動かして、答えと見比べる。Raspberry Piの電子工作を試せる学習ワークスペース。"><link rel="stylesheet" href="./style.css"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%232b663f'/%3E%3Ctext x='9' y='29' font-size='28' fill='white'%3Eπ%3C/text%3E%3C/svg%3E"></head>
+<body>
+<header class="app-header"><a href="./" class="brand"><span class="brand-icon">π</span>Pi Lab<span class="version">v2</span></a><div class="header-note">Raspberry Pi ワークスペース</div><button id="help-button" class="quiet">使い方</button></header>
+<main id="app"></main>
+<div id="toast" role="status" class="toast" hidden></div>
+<dialog id="help-dialog"><div class="dialog-head"><h2>ワークスペースの使い方</h2><button class="quiet" id="close-help">閉じる</button></div><ol><li>「部品を追加」から部品を選びます。</li><li>端子を1つずつタップして配線します。部品の名前をドラッグすると移動できます。</li><li>Pythonコードを書いて「実行」を押します。</li><li>「答え」を開くと、配線とコードを見比べられます。</li></ol><p>この版はRaspberry Pi 4の40ピンGPIOに対応しています。Picoはピン配置とPythonライブラリが異なります。</p><p>対応するGPIO操作をブラウザで再現します。Raspberry Pi OS全体や実際の電流・電圧の精密計算は含みません。</p><p><a href="./assets/ATTRIBUTION.md" target="_blank" rel="noopener">画像素材・ライセンス</a> · <a href="https://www.raspberrypi.com/documentation/computers/raspberry-pi.html" target="_blank" rel="noopener">公式GPIO資料</a></p></dialog>
+<script type="module" src="./src/app.js"></script>
+</body></html>
