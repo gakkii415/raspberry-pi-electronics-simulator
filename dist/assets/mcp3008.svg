@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="170" height="171" viewBox="0 0 170 171"><title>MCP3008 — generic terminal schematic</title><desc>Abstract terminal diagram. Not a physical module image. Connector artwork adapted from Wokwi servo, MIT.</desc><rect x="1" y="1" width="168" height="169" rx="9" fill="#173445" stroke="#5d8898"/><text x="85" y="13" text-anchor="middle" font-family="sans-serif" font-size="7" fill="#a9c6d1">GENERIC MODEL</text><g font-family="sans-serif"><g transform="translate(3 26)">
+            <rect x="0" y="-1.91" width="3.72" height="3.71" />
+            <path d="m2.026 -1.91h13.532l-13.425 0.51865z" />
+            <path d="m2.026 1.80h13.532l-13.425-0.50702z" />
+            <rect fill="#ccc" x="0.33" y="-1.23" width="3.04" height="2.46" rx=".15" />
+          </g><text x="23" y="29" font-size="9" fill="#dbe9f0">VDD</text><g transform="translate(3 41)">
+            <rect x="0" y="-1.91" width="3.72" height="3.71" />
+            <path d="m2.026 -1.91h13.532l-13.425 0.51865z" />
+            <path d="m2.026 1.80h13.532l-13.425-0.50702z" />
+            <rect fill="#ccc" x="0.33" y="-1.23" width="3.04" height="2.46" rx=".15" />
+          </g><text x="23" y="44" font-size="9" fill="#dbe9f0">VREF</text><g transform="translate(3 56)">
+            <rect x="0" y="-1.91" width="3.72" height="3.71" />
+            <path d="m2.026 -1.91h13.532l-13.425 0.51865z" />
+            <path d="m2.026 1.80h13.532l-13.425-0.50702z" />
+            <rect fill="#ccc" x="0.33" y="-1.23" width="3.04" height="2.46" rx=".15" />
+          </g><text x="23" y="59" font-size="9" fill="#dbe9f0">AGND</text><g transform="translate(3 71)">
+            <rect x="0" y="-1.91" width="3.72" height="3.71" />
+            <path d="m2.026 -1.91h13.532l-13.425 0.51865z" />
+            <path d="m2.026 1.80h13.532l-13.425-0.50702z" />
+            <rect fill="#ccc" x="0.33" y="-1.23" width="3.04" height="2.46" rx=".15" />
+          </g><text x="23" y="74" font-size="9" fill="#dbe9f0">DGND</text><g transform="translate(3 86)">
+            <rect x="0" y="-1.91" width="3.72" height="3.71" />
+            <path d="m2.026 -1.91h13.532l-13.425 0.51865z" />
+            <path d="m2.026 1.80h13.532l-13.425-0.50702z" />
+            <rect fill="#ccc" x="0.33" y="-1.23" width="3.04" height="2.46" rx=".15" />
+          </g><text x="23" y="89" font-size="9" fill="#dbe9f0">CLK</text><g transform="translate(3 101)">
+            <rect x="0" y="-1.91" width="3.72" height="3.71" />
+            <path d="m2.026 -1.91h13.532l-13.425 0.51865z" />
+            <path d="m2.026 1.80h13.532l-13.425-0.50702z" />
+            <rect fill="#ccc" x="0.33" y="-1.23" width="3.04" height="2.46" rx=".15" />
+          </g><text x="23" y="104" font-size="9" fill="#dbe9f0">DOUT</text><g transform="translate(3 116)">
+            <rect x="0" y="-1.91" width="3.72" height="3.71" />
+            <path d="m2.026 -1.91h13.532l-13.425 0.51865z" />
+            <path d="m2.026 1.80h13.532l-13.425-0.50702z" />
+            <rect fill="#ccc" x="0.33" y="-1.23" width="3.04" height="2.46" rx=".15" />
+          </g><text x="23" y="119" font-size="9" fill="#dbe9f0">DIN</text><g transform="translate(3 131)">
+            <rect x="0" y="-1.91" width="3.72" height="3.71" />
+            <path d="m2.026 -1.91h13.532l-13.425 0.51865z" />
+            <path d="m2.026 1.80h13.532l-13.425-0.50702z" />
+            <rect fill="#ccc" x="0.33" y="-1.23" width="3.04" height="2.46" rx=".15" />
+          </g><text x="23" y="134" font-size="9" fill="#dbe9f0">CS</text><g transform="translate(3 146)">
+            <rect x="0" y="-1.91" width="3.72" height="3.71" />
+            <path d="m2.026 -1.91h13.532l-13.425 0.51865z" />
+            <path d="m2.026 1.80h13.532l-13.425-0.50702z" />
+            <rect fill="#ccc" x="0.33" y="-1.23" width="3.04" height="2.46" rx=".15" />
+          </g><text x="23" y="149" font-size="9" fill="#dbe9f0">CH0</text><text x="112" y="80.5" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff"><tspan x="112" dy="0">MCP3008</tspan></text><text x="85" y="163" text-anchor="middle" font-size="7" fill="#a9c6d1">ADC · DIP pin subset</text></g></svg>

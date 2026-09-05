@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="170" height="100" viewBox="0 0 170 100"><title>SSD1306 OLED — generic terminal schematic</title><desc>Abstract terminal diagram. Not a physical module image. Connector artwork adapted from Wokwi servo, MIT.</desc><rect x="1" y="1" width="168" height="98" rx="9" fill="#173445" stroke="#5d8898"/><text x="85" y="13" text-anchor="middle" font-family="sans-serif" font-size="7" fill="#a9c6d1">GENERIC MODEL</text><g font-family="sans-serif"><g transform="translate(3 26)">
+            <rect x="0" y="-1.91" width="3.72" height="3.71" />
+            <path d="m2.026 -1.91h13.532l-13.425 0.51865z" />
+            <path d="m2.026 1.80h13.532l-13.425-0.50702z" />
+            <rect fill="#ccc" x="0.33" y="-1.23" width="3.04" height="2.46" rx=".15" />
+          </g><text x="23" y="29" font-size="9" fill="#dbe9f0">VCC</text><g transform="translate(3 41)">
+            <rect x="0" y="-1.91" width="3.72" height="3.71" />
+            <path d="m2.026 -1.91h13.532l-13.425 0.51865z" />
+            <path d="m2.026 1.80h13.532l-13.425-0.50702z" />
+            <rect fill="#ccc" x="0.33" y="-1.23" width="3.04" height="2.46" rx=".15" />
+          </g><text x="23" y="44" font-size="9" fill="#dbe9f0">GND</text><g transform="translate(3 56)">
+            <rect x="0" y="-1.91" width="3.72" height="3.71" />
+            <path d="m2.026 -1.91h13.532l-13.425 0.51865z" />
+            <path d="m2.026 1.80h13.532l-13.425-0.50702z" />
+            <rect fill="#ccc" x="0.33" y="-1.23" width="3.04" height="2.46" rx=".15" />
+          </g><text x="23" y="59" font-size="9" fill="#dbe9f0">SDA</text><g transform="translate(3 71)">
+            <rect x="0" y="-1.91" width="3.72" height="3.71" />
+            <path d="m2.026 -1.91h13.532l-13.425 0.51865z" />
+            <path d="m2.026 1.80h13.532l-13.425-0.50702z" />
+            <rect fill="#ccc" x="0.33" y="-1.23" width="3.04" height="2.46" rx=".15" />
+          </g><text x="23" y="74" font-size="9" fill="#dbe9f0">SCL</text><text x="112" y="45.0" text-anchor="middle" font-size="11" font-weight="bold" fill="#ffffff"><tspan x="112" dy="0">SSD1306</tspan><tspan x="112" dy="15">OLED</tspan></text><text x="85" y="92" text-anchor="middle" font-size="7" fill="#a9c6d1">I2C · 0x3C · 128x64</text></g></svg>

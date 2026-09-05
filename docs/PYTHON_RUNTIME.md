@@ -141,3 +141,14 @@ Official integration documentation: https://skulpt.org/using.html
 
 The core contains a source-map comment, but the optional source map is not needed
 for execution and is not bundled. There are no CDN or external runtime requests.
+
+
+## v3 extensions
+
+The worker receives `{type:"devices",devices:[{id,type,bcm,address,values,ready}]}` from the physical wiring evaluator (`hardware.js`). It only exposes devices with ready=true. It emits `device-read` for observed reads and `device-output` for OLED, servo, and UART outputs.
+
+Added API subsets: GPIO Zero RGBLED/Servo/MCP3008/MotionSensor, smbus2 SMBus/i2c_msg, spidev SpiDev, serial Serial, board, adafruit_dht, bmp280, adafruit_vl53l0x, adafruit_ssd1306. Full upstream drivers are not bundled. Unsupported transactions raise explicit errors.
+
+The supported register maps are BH1750 raw readings, MPU6050 accelerometer/gyro, ADS1115 channel0 conversion and DS3231 time/date. BMP280 compensation and physical bus timing are abstracted. UART peripheral replies are controlled by the text field. RTC time comes from the controls, not a battery-backed running wall clock. Servo values are normalized positions, not guaranteed physical degrees.
+
+Verification: `node tests/runtime.test.mjs` covers14 groups; `node tests/lessons.test.mjs` executes all20 actual answers and checks missing wire cases.

@@ -7,6 +7,7 @@ export function buildGraph(components,wires,pressed={}){
  for(const label of ['GND','3V3','5V']){const pins=board.pins.filter(p=>p.label===label);for(const p of pins.slice(1))edge(pins[0].id,p.id);}
  wires.forEach(w=>edge(w.a,w.b));
  components.forEach(c=>{if(c.type==='resistor')edge(`${c.id}:1`,`${c.id}:2`,'resistor',Number(c.value)||330);if(c.type==='button'){edge(`${c.id}:1l`,`${c.id}:1r`);edge(`${c.id}:2l`,`${c.id}:2r`);if(pressed[c.id])edge(`${c.id}:1l`,`${c.id}:2l`,'button');}});
+ components.filter(c=>c.type==='switch'&&pressed[c.id]).forEach(c=>edge(c.id+':1',c.id+':2','button'));
  return graph;
 }
 export function findPath(graph,from,to,requireResistor=false,excludeResistors=false){
@@ -17,8 +18,8 @@ export function findPath(graph,from,to,requireResistor=false,excludeResistors=fa
 }
 export function analyze(components,wires,outputs={},pressed={}){
  const graph=buildGraph(components,wires,pressed),issues=[],states={},inputs={};
- const grounds=board.pins.filter(p=>p.type==='ground');
- const sources=board.pins.filter(p=>p.type==='power'||outputs[p.bcm]!==undefined).map(p=>({...p,voltage:p.type==='power'?(p.label==='5V'?5:3.3):outputs[p.bcm]*3.3}));
+ const grounds=[...board.pins.filter(p=>p.type==='ground'),...components.filter(c=>c.type==='supply').map(c=>({id:c.id+':-'}))];
+ const sources=[...board.pins.filter(p=>p.type==='power'||outputs[p.bcm]!==undefined).map(p=>({...p,voltage:p.type==='power'?(p.label==='5V'?5:3.3):outputs[p.bcm]*3.3})),...components.filter(c=>c.type==='supply').map(c=>({id:c.id+':+',voltage:5}))];
  const zeros=[...grounds,...sources.filter(p=>p.voltage===0)];
  const issue=(code,message)=>{if(!issues.some(i=>i.code===code))issues.push({code,message});};
  for(const source of sources.filter(p=>p.voltage>0))for(const ground of zeros){if(findPath(graph,source.id,ground.id,false,true))issue('short','電源または出力がGNDに直結しています。配線を直してください。');}

@@ -1,7 +1,13 @@
 /* Classic worker: keep this file beside gpio-modules.js and vendor/. */
 importScripts('./vendor/skulpt.min.js', './vendor/skulpt-stdlib.js', './gpio-modules.js');
 
+// Skulpt exposes the Python 2 name; Python 3 aliases IOError and OSError.
+Sk.builtins.OSError = Sk.builtin.IOError;
 (() => {
+  let devices = [];
+  const observed = new Set();
+  const deviceOutputs = new Map();
+  const pendingDevices = new Map();
   const inputs = Object.create(null);
   const outputs = Object.create(null);
   const sentOutputs = Object.create(null);
@@ -25,11 +31,33 @@ importScripts('./vendor/skulpt.min.js', './vendor/skulpt-stdlib.js', './gpio-mod
       }
     }
     pendingOutputs.clear();
+    for (const [id, value] of pendingDevices) emit({ type: 'device-output', id, value });
+    pendingDevices.clear();
   }
 
   // Only the bridge module uses this object. No filesystem or network API is exposed.
   self.piSimulator = {
-    read(pin) { return inputs[pin] ? 1 : 0; },
+    device(type, selector, byAddress) {
+      const device = devices.find(d => (byAddress ? d.address === selector : d.type === type && (selector < 0 || d.bcm === selector)) && d.ready === true);
+      if (!device) throw new Sk.builtin.IOError('No wired, powered ' + (byAddress ? 'I2C device at address ' + selector : type + ' device') + '. Check connections.');
+      if (!observed.has(device.id)) { observed.add(device.id); emit({type:'device-read',id:device.id}); }
+      return device;
+    },
+    deviceOutput(id, value) {
+      const serialized = JSON.stringify(value);
+      if (deviceOutputs.get(id) === serialized) return;
+      if (!deviceOutputs.has(id)) emit({type:'device-output',id,value});
+      else {
+        pendingDevices.set(id,value);
+        if (gpioTimer === null) gpioTimer = setTimeout(flushGPIO, GPIO_FRAME_MS);
+      }
+      deviceOutputs.set(id, serialized);
+    },
+    read(pin) {
+      const device = devices.find(d => d.bcm === pin && d.ready && ['button','switch','pir'].includes(d.type));
+      if (device && !observed.has(device.id)) { observed.add(device.id); emit({type:'device-read',id:device.id}); }
+      return inputs[pin] ? 1 : 0;
+    },
     write(pin, value) {
       if (outputs[pin] !== value) {
         outputs[pin] = value;
@@ -72,6 +100,10 @@ importScripts('./vendor/skulpt.min.js', './vendor/skulpt-stdlib.js', './gpio-mod
 
   self.onmessage = async ({ data }) => {
     if (!data || typeof data !== 'object') return;
+    if (data.type === 'devices') {
+      devices = Array.isArray(data.devices) ? data.devices.filter(d => d && typeof d.id === 'string' && typeof d.type === 'string').slice(0, 100) : [];
+      return;
+    }
     if (data.type === 'inputs') {
       for (const [key, raw] of Object.entries(data.values || {})) {
         const pin = Number(key);
